@@ -465,96 +465,143 @@
         // ===========================
         function generatePixelWallTexture() {
             const canvas = document.createElement('canvas');
-            canvas.width = 64;
-            canvas.height = 64;
+            canvas.width = 2048;
+            canvas.height = 2048;
             const ctx = canvas.getContext('2d');
 
-            // Create rough pixel blocks
-            const blockSize = 8;
-            for (let x = 0; x < canvas.width; x += blockSize) {
-                for (let y = 0; y < canvas.height; y += blockSize) {
-                    const gray = Math.random() > 0.5 ? 60 : 80;
-                    const variation = Math.floor(Math.random() * 20) - 10;
-                    ctx.fillStyle = `rgb(${gray + variation}, ${gray + variation}, ${gray + variation})`;
-                    ctx.fillRect(x, y, blockSize, blockSize);
+            // Pure black background
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // ASCII characters and warning words
+            const chars = ['#', '|', '/', '\\', '-', '+', '=', '*', ':', '.', 'X', 'H', 'M', 'W', 'N'];
+            const warnings = ['RUN', 'ESCAPE', 'DANGER', 'GET OUT', 'FLEE', 'WARNING', 'EXIT', 'HURRY'];
+            const allWords = [...chars, ...warnings];
+
+            // Text settings - dense coverage
+            ctx.font = 'bold 28px Courier New';
+
+            let y = 40;
+            let x = 20;
+
+            // Fill the entire canvas with dense text
+            while (y < canvas.height - 40) {
+                const word = allWords[Math.floor(Math.random() * allWords.length)];
+
+                // Random color - mostly gray, sometimes red for warnings
+                if (warnings.includes(word)) {
+                    const redIntensity = 150 + Math.floor(Math.random() * 80);
+                    ctx.fillStyle = `rgb(${redIntensity}, ${Math.floor(redIntensity * 0.2)}, ${Math.floor(redIntensity * 0.1)})`;
+                } else {
+                    const grayValue = 80 + Math.floor(Math.random() * 60);
+                    ctx.fillStyle = `rgb(${grayValue}, ${grayValue}, ${grayValue})`;
                 }
+
+                const metrics = ctx.measureText(word);
+
+                if (x + metrics.width > canvas.width - 40) {
+                    x = 20;
+                    y += 45; // Line height
+                }
+
+                ctx.fillText(word, x, y);
+                x += metrics.width + 20; // Word spacing
             }
 
             const texture = new THREE.CanvasTexture(canvas);
             texture.wrapS = THREE.RepeatWrapping;
             texture.wrapT = THREE.RepeatWrapping;
-            texture.repeat.set(8, 4);
-            texture.magFilter = THREE.NearestFilter; // Pixelated look
-            texture.minFilter = THREE.NearestFilter;
+            texture.repeat.set(4, 4);
+            texture.needsUpdate = true;
             return texture;
         }
 
         function generatePixelFloorTexture() {
             const canvas = document.createElement('canvas');
-            canvas.width = 64;
-            canvas.height = 64;
+            canvas.width = 2048;
+            canvas.height = 2048;
             const ctx = canvas.getContext('2d');
 
-            // Base floor
-            ctx.fillStyle = '#2a2a2a';
+            // Pure black background
+            ctx.fillStyle = '#000000';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Add random dark spots
-            for (let i = 0; i < 30; i++) {
-                const x = Math.floor(Math.random() * canvas.width);
-                const y = Math.floor(Math.random() * canvas.height);
-                const size = Math.floor(Math.random() * 4) + 2;
-                ctx.fillStyle = `rgb(20, 20, 20)`;
-                ctx.fillRect(x, y, size, size);
-            }
+            // Floor characters (dots and dashes)
+            const floorChars = ['.', '_', '-', '~', ':', ',', "'", '`', '^', '·'];
 
-            // Add pixel cracks
-            for (let i = 0; i < 10; i++) {
-                const x = Math.floor(Math.random() * canvas.width);
-                const y = Math.floor(Math.random() * canvas.height);
-                ctx.fillStyle = '#111';
-                ctx.fillRect(x, y, 2, Math.random() * 10);
+            ctx.font = 'bold 24px Courier New';
+
+            let y = 35;
+            let x = 20;
+
+            // Sparse floor text
+            while (y < canvas.height - 35) {
+                const char = floorChars[Math.floor(Math.random() * floorChars.length)];
+                const grayValue = 60 + Math.floor(Math.random() * 40);
+                ctx.fillStyle = `rgb(${grayValue}, ${grayValue}, ${grayValue})`;
+
+                const metrics = ctx.measureText(char);
+
+                if (x + metrics.width > canvas.width - 40) {
+                    x = 20;
+                    y += 40;
+                }
+
+                // Only draw 50% of the time for sparse effect
+                if (Math.random() > 0.5) {
+                    ctx.fillText(char, x, y);
+                }
+                x += metrics.width + 25;
             }
 
             const texture = new THREE.CanvasTexture(canvas);
             texture.wrapS = THREE.RepeatWrapping;
             texture.wrapT = THREE.RepeatWrapping;
-            texture.repeat.set(6, 12);
-            texture.magFilter = THREE.NearestFilter;
-            texture.minFilter = THREE.NearestFilter;
+            texture.repeat.set(6, 6);
+            texture.needsUpdate = true;
             return texture;
         }
 
         function generatePixelCeilingTexture() {
             const canvas = document.createElement('canvas');
-            canvas.width = 64;
-            canvas.height = 64;
+            canvas.width = 2048;
+            canvas.height = 2048;
             const ctx = canvas.getContext('2d');
 
-            // Darker ceiling
-            ctx.fillStyle = '#1a1a1a';
+            // Pure black background
+            ctx.fillStyle = '#000000';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Add grid lines
-            ctx.strokeStyle = '#0f0f0f';
-            ctx.lineWidth = 1;
-            for (let i = 0; i < canvas.width; i += 16) {
-                ctx.beginPath();
-                ctx.moveTo(i, 0);
-                ctx.lineTo(i, canvas.height);
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.moveTo(0, i);
-                ctx.lineTo(canvas.width, i);
-                ctx.stroke();
+            // Ceiling characters (horizontal lines)
+            const ceilingChars = ['-', '_', '=', '≡', '~', '¯', '‾', '—'];
+
+            ctx.font = 'bold 24px Courier New';
+
+            let y = 35;
+            let x = 20;
+
+            // Dense ceiling text
+            while (y < canvas.height - 35) {
+                const char = ceilingChars[Math.floor(Math.random() * ceilingChars.length)];
+                const grayValue = 50 + Math.floor(Math.random() * 40); // Darker than walls
+                ctx.fillStyle = `rgb(${grayValue}, ${grayValue}, ${grayValue})`;
+
+                const metrics = ctx.measureText(char);
+
+                if (x + metrics.width > canvas.width - 40) {
+                    x = 20;
+                    y += 40;
+                }
+
+                ctx.fillText(char, x, y);
+                x += metrics.width + 15;
             }
 
             const texture = new THREE.CanvasTexture(canvas);
             texture.wrapS = THREE.RepeatWrapping;
             texture.wrapT = THREE.RepeatWrapping;
-            texture.repeat.set(6, 12);
-            texture.magFilter = THREE.NearestFilter;
-            texture.minFilter = THREE.NearestFilter;
+            texture.repeat.set(6, 6);
+            texture.needsUpdate = true;
             return texture;
         }
 
