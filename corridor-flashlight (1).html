@@ -465,47 +465,39 @@
         // ===========================
         function generatePixelWallTexture() {
             const canvas = document.createElement('canvas');
-            canvas.width = 2048;
-            canvas.height = 2048;
+            const width = 2048;
+            const height = 2048;
+            canvas.width = width;
+            canvas.height = height;
             const ctx = canvas.getContext('2d');
 
-            // Pure black background
+            // Background (exactly like reference code)
             ctx.fillStyle = '#000000';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillRect(0, 0, width, height);
 
-            // ASCII characters and warning words
-            const chars = ['#', '|', '/', '\\', '-', '+', '=', '*', ':', '.', 'X', 'H', 'M', 'W', 'N'];
-            const warnings = ['RUN', 'ESCAPE', 'DANGER', 'GET OUT', 'FLEE', 'WARNING', 'EXIT', 'HURRY'];
-            const allWords = [...chars, ...warnings];
-
-            // Text settings - dense coverage
+            // Text settings (exactly like reference code)
+            ctx.fillStyle = '#ffffff';
             ctx.font = 'bold 28px Courier New';
+
+            // Wall text with ASCII and warnings
+            const wallText = 'RUN ESCAPE DANGER # | / \\ - + = * : . X H M W N GET OUT FLEE WARNING EXIT HURRY RUN ESCAPE DANGER # | / \\ - + = * : . X H M W N GET OUT FLEE WARNING EXIT HURRY RUN ESCAPE DANGER # | / \\ - + = * : . X H M W N GET OUT FLEE WARNING EXIT HURRY';
+            const words = wallText.split(' ');
 
             let y = 40;
             let x = 20;
 
-            // Fill the entire canvas with dense text
-            while (y < canvas.height - 40) {
-                const word = allWords[Math.floor(Math.random() * allWords.length)];
-
-                // Random color - mostly gray, sometimes red for warnings
-                if (warnings.includes(word)) {
-                    const redIntensity = 150 + Math.floor(Math.random() * 80);
-                    ctx.fillStyle = `rgb(${redIntensity}, ${Math.floor(redIntensity * 0.2)}, ${Math.floor(redIntensity * 0.1)})`;
-                } else {
-                    const grayValue = 80 + Math.floor(Math.random() * 60);
-                    ctx.fillStyle = `rgb(${grayValue}, ${grayValue}, ${grayValue})`;
-                }
-
+            // Fill canvas with dense text (exactly like reference code)
+            while (y < height - 40) {
+                const word = words[Math.floor(Math.random() * words.length)];
                 const metrics = ctx.measureText(word);
 
-                if (x + metrics.width > canvas.width - 40) {
+                if (x + metrics.width > width - 40) {
                     x = 20;
-                    y += 45; // Line height
+                    y += 50; // Same as reference
                 }
 
                 ctx.fillText(word, x, y);
-                x += metrics.width + 20; // Word spacing
+                x += metrics.width + 25; // Same as reference
             }
 
             const texture = new THREE.CanvasTexture(canvas);
@@ -518,38 +510,39 @@
 
         function generatePixelFloorTexture() {
             const canvas = document.createElement('canvas');
-            canvas.width = 2048;
-            canvas.height = 2048;
+            const width = 2048;
+            const height = 2048;
+            canvas.width = width;
+            canvas.height = height;
             const ctx = canvas.getContext('2d');
 
-            // Pure black background
+            // Background
             ctx.fillStyle = '#000000';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillRect(0, 0, width, height);
 
-            // Floor characters (dots and dashes)
-            const floorChars = ['.', '_', '-', '~', ':', ',', "'", '`', '^', '·'];
+            // Text settings
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 28px Courier New';
 
-            ctx.font = 'bold 24px Courier New';
+            // Floor text (sparse)
+            const floorText = '. _ - ~ : , . _ - ~ : , . _ - ~ : , . _ - ~ : ,';
+            const words = floorText.split(' ');
 
-            let y = 35;
+            let y = 40;
             let x = 20;
 
-            // Sparse floor text
-            while (y < canvas.height - 35) {
-                const char = floorChars[Math.floor(Math.random() * floorChars.length)];
-                const grayValue = 60 + Math.floor(Math.random() * 40);
-                ctx.fillStyle = `rgb(${grayValue}, ${grayValue}, ${grayValue})`;
+            while (y < height - 40) {
+                const word = words[Math.floor(Math.random() * words.length)];
+                const metrics = ctx.measureText(word);
 
-                const metrics = ctx.measureText(char);
-
-                if (x + metrics.width > canvas.width - 40) {
+                if (x + metrics.width > width - 40) {
                     x = 20;
-                    y += 40;
+                    y += 50;
                 }
 
-                // Only draw 50% of the time for sparse effect
-                if (Math.random() > 0.5) {
-                    ctx.fillText(char, x, y);
+                // Sparse - only 30% coverage
+                if (Math.random() > 0.7) {
+                    ctx.fillText(word, x, y);
                 }
                 x += metrics.width + 25;
             }
@@ -564,37 +557,38 @@
 
         function generatePixelCeilingTexture() {
             const canvas = document.createElement('canvas');
-            canvas.width = 2048;
-            canvas.height = 2048;
+            const width = 2048;
+            const height = 2048;
+            canvas.width = width;
+            canvas.height = height;
             const ctx = canvas.getContext('2d');
 
-            // Pure black background
+            // Background
             ctx.fillStyle = '#000000';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillRect(0, 0, width, height);
 
-            // Ceiling characters (horizontal lines)
-            const ceilingChars = ['-', '_', '=', '≡', '~', '¯', '‾', '—'];
+            // Text settings
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 28px Courier New';
 
-            ctx.font = 'bold 24px Courier New';
+            // Ceiling text (horizontal lines)
+            const ceilingText = '- _ = ~ - _ = ~ - _ = ~ - _ = ~';
+            const words = ceilingText.split(' ');
 
-            let y = 35;
+            let y = 40;
             let x = 20;
 
-            // Dense ceiling text
-            while (y < canvas.height - 35) {
-                const char = ceilingChars[Math.floor(Math.random() * ceilingChars.length)];
-                const grayValue = 50 + Math.floor(Math.random() * 40); // Darker than walls
-                ctx.fillStyle = `rgb(${grayValue}, ${grayValue}, ${grayValue})`;
+            while (y < height - 40) {
+                const word = words[Math.floor(Math.random() * words.length)];
+                const metrics = ctx.measureText(word);
 
-                const metrics = ctx.measureText(char);
-
-                if (x + metrics.width > canvas.width - 40) {
+                if (x + metrics.width > width - 40) {
                     x = 20;
-                    y += 40;
+                    y += 50;
                 }
 
-                ctx.fillText(char, x, y);
-                x += metrics.width + 15;
+                ctx.fillText(word, x, y);
+                x += metrics.width + 25;
             }
 
             const texture = new THREE.CanvasTexture(canvas);
