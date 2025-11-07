@@ -457,118 +457,118 @@
         // Generate wall texture with text
         function generatePixelWallTexture() {
             const canvas = document.createElement('canvas');
-            canvas.width = 512;
-            canvas.height = 512;
+            canvas.width = 1024;
+            canvas.height = 1024;
             const ctx = canvas.getContext('2d');
 
             ctx.fillStyle = '#000000';
-            ctx.fillRect(0, 0, 512, 512);
+            ctx.fillRect(0, 0, 1024, 1024);
 
             ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 40px Courier New';
+            ctx.font = 'bold 32px Courier New';
 
-            const wallText = 'RUN ESCAPE DANGER # | / \\ - + = * : . X H M W N GET OUT FLEE WARNING EXIT HURRY';
+            const wallText = 'RUN ESCAPE DANGER GET OUT FLEE WARNING EXIT HURRY # | / \\ - + = * : . X H M W N';
             const words = wallText.split(' ');
 
-            let y = 50;
-            let x = 10;
-            while (y < 500) {
+            let y = 40;
+            let x = 20;
+            while (y < 1000) {
                 const word = words[Math.floor(Math.random() * words.length)];
                 const metrics = ctx.measureText(word);
 
-                if (x + metrics.width > 500) {
-                    x = 10;
-                    y += 60;
+                if (x + metrics.width > 1000) {
+                    x = 20;
+                    y += 45;
                 }
 
                 ctx.fillText(word, x, y);
-                x += metrics.width + 20;
+                x += metrics.width + 18;
             }
 
             const texture = new THREE.CanvasTexture(canvas);
             texture.wrapS = THREE.RepeatWrapping;
             texture.wrapT = THREE.RepeatWrapping;
-            texture.repeat.set(8, 4);
+            texture.repeat.set(2, 2);
             texture.needsUpdate = true;
             return texture;
         }
 
         function generatePixelFloorTexture() {
             const canvas = document.createElement('canvas');
-            canvas.width = 512;
-            canvas.height = 512;
+            canvas.width = 1024;
+            canvas.height = 1024;
             const ctx = canvas.getContext('2d');
 
             ctx.fillStyle = '#000000';
-            ctx.fillRect(0, 0, 512, 512);
+            ctx.fillRect(0, 0, 1024, 1024);
 
             ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 36px Courier New';
+            ctx.font = 'bold 28px Courier New';
 
-            const floorText = '. _ - ~ : , . _ - ~ : , . _ - ~ : ,';
+            const floorText = '. _ - ~ : , . _ - ~ : ,';
             const words = floorText.split(' ');
 
-            let y = 50;
-            let x = 10;
+            let y = 40;
+            let x = 20;
 
-            while (y < 500) {
+            while (y < 1000) {
                 const word = words[Math.floor(Math.random() * words.length)];
                 const metrics = ctx.measureText(word);
 
-                if (x + metrics.width > 500) {
-                    x = 10;
-                    y += 60;
+                if (x + metrics.width > 1000) {
+                    x = 20;
+                    y += 45;
                 }
 
                 if (Math.random() > 0.6) {
                     ctx.fillText(word, x, y);
                 }
-                x += metrics.width + 20;
+                x += metrics.width + 18;
             }
 
             const texture = new THREE.CanvasTexture(canvas);
             texture.wrapS = THREE.RepeatWrapping;
             texture.wrapT = THREE.RepeatWrapping;
-            texture.repeat.set(10, 10);
+            texture.repeat.set(3, 3);
             texture.needsUpdate = true;
             return texture;
         }
 
         function generatePixelCeilingTexture() {
             const canvas = document.createElement('canvas');
-            canvas.width = 512;
-            canvas.height = 512;
+            canvas.width = 1024;
+            canvas.height = 1024;
             const ctx = canvas.getContext('2d');
 
             ctx.fillStyle = '#000000';
-            ctx.fillRect(0, 0, 512, 512);
+            ctx.fillRect(0, 0, 1024, 1024);
 
             ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 36px Courier New';
+            ctx.font = 'bold 28px Courier New';
 
-            const ceilingText = '- _ = ~ - _ = ~ - _ = ~';
+            const ceilingText = '- _ = ~ - _ = ~';
             const words = ceilingText.split(' ');
 
-            let y = 50;
-            let x = 10;
+            let y = 40;
+            let x = 20;
 
-            while (y < 500) {
+            while (y < 1000) {
                 const word = words[Math.floor(Math.random() * words.length)];
                 const metrics = ctx.measureText(word);
 
-                if (x + metrics.width > 500) {
-                    x = 10;
-                    y += 60;
+                if (x + metrics.width > 1000) {
+                    x = 20;
+                    y += 45;
                 }
 
                 ctx.fillText(word, x, y);
-                x += metrics.width + 20;
+                x += metrics.width + 18;
             }
 
             const texture = new THREE.CanvasTexture(canvas);
             texture.wrapS = THREE.RepeatWrapping;
             texture.wrapT = THREE.RepeatWrapping;
-            texture.repeat.set(10, 10);
+            texture.repeat.set(3, 3);
             texture.needsUpdate = true;
             return texture;
         }
