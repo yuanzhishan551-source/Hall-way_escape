@@ -246,7 +246,7 @@
 
     <!-- UI Overlay -->
     <div id="ui-overlay">
-        <div id="mode-indicator">MODE: LONG BEAM</div>
+        <div id="mode-indicator">MODE: WIDE BEAM</div>
         <div id="instructions">
             WASD: Move<br>
             MOUSE: Look Around<br>
@@ -283,15 +283,6 @@
 
         // Mode configurations
         const modes = [
-            {
-                name: 'LONG BEAM',
-                color: 0xffdd00,
-                colorHex: '#ffdd00',
-                intensity: 2,
-                distance: 40,
-                angle: Math.PI / 8,
-                penumbra: 0.3
-            },
             {
                 name: 'WIDE BEAM',
                 color: 0xff8800,
@@ -934,13 +925,8 @@
 
                 // Apply flashlight effects based on mode
                 if (isHitByFlashlight) {
-                    // Mode 0: Long Beam (Yellow) - Reveals red monsters
-                    if (state.currentMode === 0 && userData.type === 'red') {
-                        userData.revealed = true;
-                    }
-
-                    // Mode 1: Wide Beam (Orange) - Freezes all monsters
-                    else if (state.currentMode === 1) {
+                    // Mode 0: Wide Beam (Orange) - Freezes all monsters
+                    if (state.currentMode === 0) {
                         if (!userData.frozen) {
                             userData.frozen = true;
                             userData.freezeTimer = 2.0; // Freeze for 2 seconds
@@ -948,18 +934,13 @@
                         }
                     }
 
-                    // Mode 2: Detection (Green) - Disintegrates green monsters
-                    else if (state.currentMode === 2 && userData.type === 'green') {
+                    // Mode 1: Detection (Green) - Disintegrates green monsters
+                    else if (state.currentMode === 1 && userData.type === 'green') {
                         if (!userData.disintegrating) {
                             userData.disintegrating = true;
                             userData.disintegrateTime = time;
                             playDetectionNoise();
                         }
-                    }
-                } else {
-                    // Not hit by flashlight
-                    if (state.currentMode === 0) {
-                        userData.revealed = false;
                     }
                 }
 
