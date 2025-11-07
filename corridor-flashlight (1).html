@@ -476,7 +476,10 @@
             // ASCII characters for walls
             const chars = ['#', '|', '/', '\\', '-', '+', '=', '*', ':', '.', 'X', 'H', 'W', 'M'];
 
-            // Draw dense ASCII text
+            // Warning messages to embed in walls
+            const warnings = ['RUN', 'ESCAPE', 'DANGER', 'GET OUT', 'FLEE', 'WARNING', 'EXIT', 'HURRY'];
+
+            // Draw dense ASCII text background
             ctx.font = 'bold 8px monospace';
             ctx.textAlign = 'left';
             ctx.textBaseline = 'top';
@@ -491,6 +494,31 @@
                     ctx.fillStyle = `rgb(${brightness}, ${brightness}, ${brightness})`;
                     ctx.fillText(char, x, y);
                 }
+            }
+
+            // Overlay warning messages randomly
+            ctx.font = 'bold 16px monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // Add 8-12 warning messages scattered across the texture
+            const messageCount = 8 + Math.floor(Math.random() * 5);
+            for (let i = 0; i < messageCount; i++) {
+                const warning = warnings[Math.floor(Math.random() * warnings.length)];
+                const x = Math.random() * canvas.width;
+                const y = Math.random() * canvas.height;
+
+                // Draw with dark red/orange color that will glow when lit by red light
+                const redIntensity = 80 + Math.floor(Math.random() * 60); // 80-140
+                ctx.fillStyle = `rgb(${redIntensity}, ${Math.floor(redIntensity * 0.3)}, ${Math.floor(redIntensity * 0.2)})`;
+
+                // Add glow effect
+                ctx.shadowBlur = 4;
+                ctx.shadowColor = `rgb(${redIntensity}, 0, 0)`;
+                ctx.fillText(warning, x, y);
+
+                // Reset shadow
+                ctx.shadowBlur = 0;
             }
 
             const texture = new THREE.CanvasTexture(canvas);
