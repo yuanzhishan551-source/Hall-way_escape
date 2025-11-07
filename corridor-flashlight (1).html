@@ -448,99 +448,78 @@
             rightWall.receiveShadow = true;
             corridor.add(rightWall);
 
-            // Add hanging pipes
-            createHangingPipes(corridor, corridorLength, corridorWidth, corridorHeight);
-
-            // Add floor cracks
-            createFloorCracks(floor, corridorWidth, corridorLength);
-
             // Add exit door at corridor end
             createExitDoor(corridor, corridorLength, corridorWidth, corridorHeight);
 
             scene.add(corridor);
         }
 
-        // ===========================
-        // GENERATE PIXEL TEXTURES
-        // ===========================
+        // Generate wall texture with text
         function generatePixelWallTexture() {
             const canvas = document.createElement('canvas');
-            const width = 2048;
-            const height = 2048;
-            canvas.width = width;
-            canvas.height = height;
+            canvas.width = 2048;
+            canvas.height = 2048;
             const ctx = canvas.getContext('2d');
 
-            // Background (exactly like reference code)
             ctx.fillStyle = '#000000';
-            ctx.fillRect(0, 0, width, height);
+            ctx.fillRect(0, 0, 2048, 2048);
 
-            // Text settings (exactly like reference code)
             ctx.fillStyle = '#ffffff';
             ctx.font = 'bold 28px Courier New';
 
-            // Wall text with ASCII and warnings
             const wallText = 'RUN ESCAPE DANGER # | / \\ - + = * : . X H M W N GET OUT FLEE WARNING EXIT HURRY RUN ESCAPE DANGER # | / \\ - + = * : . X H M W N GET OUT FLEE WARNING EXIT HURRY RUN ESCAPE DANGER # | / \\ - + = * : . X H M W N GET OUT FLEE WARNING EXIT HURRY';
             const words = wallText.split(' ');
 
             let y = 40;
             let x = 20;
-
-            // Fill canvas with dense text (exactly like reference code)
-            while (y < height - 40) {
+            while (y < 2008) {
                 const word = words[Math.floor(Math.random() * words.length)];
                 const metrics = ctx.measureText(word);
 
-                if (x + metrics.width > width - 40) {
+                if (x + metrics.width > 2008) {
                     x = 20;
-                    y += 50; // Same as reference
+                    y += 50;
                 }
 
                 ctx.fillText(word, x, y);
-                x += metrics.width + 25; // Same as reference
+                x += metrics.width + 25;
             }
 
             const texture = new THREE.CanvasTexture(canvas);
             texture.wrapS = THREE.RepeatWrapping;
             texture.wrapT = THREE.RepeatWrapping;
-            texture.repeat.set(4, 4);
+            texture.repeat.set(2, 1); // Reduced from 4,4 to make text larger
             texture.needsUpdate = true;
             return texture;
         }
 
         function generatePixelFloorTexture() {
             const canvas = document.createElement('canvas');
-            const width = 2048;
-            const height = 2048;
-            canvas.width = width;
-            canvas.height = height;
+            canvas.width = 2048;
+            canvas.height = 2048;
             const ctx = canvas.getContext('2d');
 
-            // Background
             ctx.fillStyle = '#000000';
-            ctx.fillRect(0, 0, width, height);
+            ctx.fillRect(0, 0, 2048, 2048);
 
-            // Text settings
             ctx.fillStyle = '#ffffff';
             ctx.font = 'bold 28px Courier New';
 
-            // Floor text (sparse)
             const floorText = '. _ - ~ : , . _ - ~ : , . _ - ~ : , . _ - ~ : ,';
             const words = floorText.split(' ');
 
             let y = 40;
             let x = 20;
 
-            while (y < height - 40) {
+            while (y < 2008) {
                 const word = words[Math.floor(Math.random() * words.length)];
                 const metrics = ctx.measureText(word);
 
-                if (x + metrics.width > width - 40) {
+                if (x + metrics.width > 2008) {
                     x = 20;
                     y += 50;
                 }
 
-                // Sparse - only 30% coverage
                 if (Math.random() > 0.7) {
                     ctx.fillText(word, x, y);
                 }
@@ -557,32 +536,27 @@
 
         function generatePixelCeilingTexture() {
             const canvas = document.createElement('canvas');
-            const width = 2048;
-            const height = 2048;
-            canvas.width = width;
-            canvas.height = height;
+            canvas.width = 2048;
+            canvas.height = 2048;
             const ctx = canvas.getContext('2d');
 
-            // Background
             ctx.fillStyle = '#000000';
-            ctx.fillRect(0, 0, width, height);
+            ctx.fillRect(0, 0, 2048, 2048);
 
-            // Text settings
             ctx.fillStyle = '#ffffff';
             ctx.font = 'bold 28px Courier New';
 
-            // Ceiling text (horizontal lines)
             const ceilingText = '- _ = ~ - _ = ~ - _ = ~ - _ = ~';
             const words = ceilingText.split(' ');
 
             let y = 40;
             let x = 20;
 
-            while (y < height - 40) {
+            while (y < 2008) {
                 const word = words[Math.floor(Math.random() * words.length)];
                 const metrics = ctx.measureText(word);
 
-                if (x + metrics.width > width - 40) {
+                if (x + metrics.width > 2008) {
                     x = 20;
                     y += 50;
                 }
@@ -597,55 +571,6 @@
             texture.repeat.set(6, 6);
             texture.needsUpdate = true;
             return texture;
-        }
-
-        // ===========================
-        // CREATE HANGING PIPES
-        // ===========================
-        function createHangingPipes(parent, length, width, height) {
-            const pipeGeometry = new THREE.CylinderGeometry(0.08, 0.08, 2, 6); // Hexagonal for pixel look
-            const pipeMaterial = new THREE.MeshStandardMaterial({
-                color: 0x3a3a3a,
-                roughness: 0.7,
-                metalness: 0.3
-            });
-
-            for (let i = -length / 2; i < length / 2; i += 8) {
-                if (Math.random() > 0.6) {
-                    const pipe = new THREE.Mesh(pipeGeometry, pipeMaterial);
-                    pipe.position.set(
-                        (Math.random() - 0.5) * width * 0.8,
-                        height - 1,
-                        i
-                    );
-                    pipe.rotation.z = (Math.random() - 0.5) * 0.3;
-                    pipe.castShadow = true;
-                    parent.add(pipe);
-                }
-            }
-        }
-
-        // ===========================
-        // CREATE FLOOR CRACKS
-        // ===========================
-        function createFloorCracks(floor, width, length) {
-            // Add 3D crack details
-            const crackGeometry = new THREE.BoxGeometry(0.1, 0.02, Math.random() * 2 + 1);
-            const crackMaterial = new THREE.MeshStandardMaterial({
-                color: 0x0a0a0a,
-                roughness: 1
-            });
-
-            for (let i = 0; i < 15; i++) {
-                const crack = new THREE.Mesh(crackGeometry, crackMaterial);
-                crack.position.set(
-                    (Math.random() - 0.5) * width,
-                    0.01,
-                    (Math.random() - 0.5) * length
-                );
-                crack.rotation.y = Math.random() * Math.PI;
-                scene.add(crack);
-            }
         }
 
         // ===========================
