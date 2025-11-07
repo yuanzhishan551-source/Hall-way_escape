@@ -453,80 +453,98 @@
             scene.add(corridor);
         }
 
-        // Add ASCII text sprites to walls
+        // Add ASCII text to walls (dense coverage)
         function addWallText(parent, length, width, height) {
-            const chars = ['#', '|', '/', '\\', '-', '+', '=', '*', ':', '.'];
+            const chars = ['#', '|', '/', '\\', '-', '+', '=', '*', ':', '.', 'X', 'H', 'M', 'W', 'N'];
             const warnings = ['RUN', 'ESCAPE', 'DANGER', 'GET OUT', 'FLEE', 'WARNING', 'EXIT', 'HURRY'];
 
-            // Add background ASCII characters
-            for (let z = -length/2; z < length/2; z += 3) {
-                for (let y = 0.5; y < height; y += 0.8) {
-                    // Left wall
-                    if (Math.random() > 0.3) {
-                        const sprite = createTextSprite(chars[Math.floor(Math.random() * chars.length)], 0.5, '#666666');
-                        sprite.position.set(-width/2 + 0.1, y, z);
-                        parent.add(sprite);
-                    }
+            // Dense ASCII characters - much smaller spacing for full coverage
+            const charSpacingZ = 0.5;  // Very close together along wall
+            const charSpacingY = 0.35;  // Dense vertical spacing
 
-                    // Right wall
-                    if (Math.random() > 0.3) {
-                        const sprite = createTextSprite(chars[Math.floor(Math.random() * chars.length)], 0.5, '#666666');
-                        sprite.position.set(width/2 - 0.1, y, z);
-                        parent.add(sprite);
-                    }
+            // Left wall - dense ASCII coverage
+            for (let z = -length/2; z < length/2; z += charSpacingZ) {
+                for (let y = 0.3; y < height - 0.3; y += charSpacingY) {
+                    const char = chars[Math.floor(Math.random() * chars.length)];
+                    const mesh = createTextMesh(char, 0.3, '#666666');
+                    mesh.position.set(-width/2 + 0.01, y, z);
+                    mesh.rotation.y = Math.PI / 2; // Face inward (right)
+                    parent.add(mesh);
                 }
             }
 
-            // Add warning messages
-            for (let i = 0; i < 30; i++) {
+            // Right wall - dense ASCII coverage
+            for (let z = -length/2; z < length/2; z += charSpacingZ) {
+                for (let y = 0.3; y < height - 0.3; y += charSpacingY) {
+                    const char = chars[Math.floor(Math.random() * chars.length)];
+                    const mesh = createTextMesh(char, 0.3, '#666666');
+                    mesh.position.set(width/2 - 0.01, y, z);
+                    mesh.rotation.y = -Math.PI / 2; // Face inward (left)
+                    parent.add(mesh);
+                }
+            }
+
+            // Add warning messages on top of ASCII background
+            for (let i = 0; i < 50; i++) {
                 const warning = warnings[Math.floor(Math.random() * warnings.length)];
                 const z = -length/2 + Math.random() * length;
-                const y = 1 + Math.random() * (height - 1.5);
-                const side = Math.random() > 0.5 ? -1 : 1;
+                const y = 0.8 + Math.random() * (height - 1.5);
+                const side = Math.random() > 0.5 ? 1 : -1;
 
-                const sprite = createTextSprite(warning, 1.2, '#CC3333');
-                sprite.position.set(side * (width/2 - 0.1), y, z);
-                parent.add(sprite);
+                const mesh = createTextMesh(warning, 1.0, '#DD3333');
+                mesh.position.set(side * (width/2 - 0.02), y, z);
+                mesh.rotation.y = side > 0 ? -Math.PI / 2 : Math.PI / 2;
+                parent.add(mesh);
             }
         }
 
         // Add floor text
         function addFloorText(parent, length, width) {
-            const chars = ['.', '_', '-', '~', ':', ','];
+            const chars = ['.', '_', '-', '~', ':', ',', "'", '`'];
 
-            for (let z = -length/2; z < length/2; z += 2) {
-                for (let x = -width/2 + 1; x < width/2; x += 1) {
-                    if (Math.random() > 0.5) {
-                        const sprite = createTextSprite(chars[Math.floor(Math.random() * chars.length)], 0.3, '#444444');
-                        sprite.position.set(x, 0.02, z);
-                        parent.add(sprite);
+            // Dense floor coverage
+            for (let z = -length/2; z < length/2; z += 1) {
+                for (let x = -width/2 + 0.5; x < width/2; x += 0.5) {
+                    if (Math.random() > 0.3) {
+                        const char = chars[Math.floor(Math.random() * chars.length)];
+                        const mesh = createTextMesh(char, 0.25, '#444444');
+                        mesh.position.set(x, 0.01, z);
+                        mesh.rotation.x = -Math.PI / 2; // Face up
+                        parent.add(mesh);
                     }
                 }
             }
         }
 
-        // Create text sprite helper
-        function createTextSprite(text, size, color) {
+        // Create text mesh that actually sticks to walls (not sprite)
+        function createTextMesh(text, size, color) {
             const canvas = document.createElement('canvas');
             const context = canvas.getContext('2d');
             canvas.width = 256;
             canvas.height = 256;
 
+            // Transparent background
+            context.clearRect(0, 0, canvas.width, canvas.height);
+
             context.fillStyle = color;
-            context.font = 'bold 120px monospace';
+            context.font = 'bold 140px monospace';
             context.textAlign = 'center';
             context.textBaseline = 'middle';
             context.fillText(text, 128, 128);
 
             const texture = new THREE.CanvasTexture(canvas);
-            const spriteMaterial = new THREE.SpriteMaterial({
+            texture.needsUpdate = true;
+
+            // Use PlaneGeometry instead of Sprite so it can be rotated properly
+            const geometry = new THREE.PlaneGeometry(size, size);
+            const material = new THREE.MeshBasicMaterial({
                 map: texture,
-                transparent: true
+                transparent: true,
+                side: THREE.DoubleSide
             });
 
-            const sprite = new THREE.Sprite(spriteMaterial);
-            sprite.scale.set(size, size, 1);
-            return sprite;
+            const mesh = new THREE.Mesh(geometry, material);
+            return mesh;
         }
 
 
