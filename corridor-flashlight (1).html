@@ -449,7 +449,7 @@
             const rightTexture = textTexture.clone();
             rightTexture.wrapS = THREE.RepeatWrapping;
             rightTexture.wrapT = THREE.RepeatWrapping;
-            rightTexture.repeat.set(50, 2); // Fill entire wall with text
+            rightTexture.repeat.set(100, 4); // Double text density to fill wall completely
             rightTexture.needsUpdate = true;
             wallTextures.push(rightTexture); // Store for animation
             materials.push(new THREE.MeshStandardMaterial({
@@ -464,7 +464,7 @@
             const leftTexture = textTexture.clone();
             leftTexture.wrapS = THREE.RepeatWrapping;
             leftTexture.wrapT = THREE.RepeatWrapping;
-            leftTexture.repeat.set(50, 2); // Fill entire wall with text
+            leftTexture.repeat.set(100, 4); // Double text density to fill wall completely
             leftTexture.needsUpdate = true;
             wallTextures.push(leftTexture); // Store for animation
             materials.push(new THREE.MeshStandardMaterial({
@@ -479,7 +479,7 @@
             const topTexture = textTexture.clone();
             topTexture.wrapS = THREE.RepeatWrapping;
             topTexture.wrapT = THREE.RepeatWrapping;
-            topTexture.repeat.set(1, 100); // No gaps between text blocks
+            topTexture.repeat.set(2, 200); // Double text density to fill ceiling completely
             topTexture.needsUpdate = true;
             wallTextures.push(topTexture); // Store for animation
             materials.push(new THREE.MeshStandardMaterial({
@@ -494,7 +494,7 @@
             const bottomTexture = textTexture.clone();
             bottomTexture.wrapS = THREE.RepeatWrapping;
             bottomTexture.wrapT = THREE.RepeatWrapping;
-            bottomTexture.repeat.set(1, 100); // No gaps between text blocks
+            bottomTexture.repeat.set(2, 200); // Double text density to fill floor completely
             bottomTexture.needsUpdate = true;
             wallTextures.push(bottomTexture); // Store for animation
             materials.push(new THREE.MeshStandardMaterial({
