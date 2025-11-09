@@ -147,17 +147,59 @@
             // Sample text with warnings
             const wallText = `RUN ESCAPE DANGER GET OUT FLEE WARNING EXIT HURRY # | / \\ - + = * : . X H M W N data information technology digital world artificial intelligence machine learning algorithm code programming software development`;
 
-            // Create corridor (long box)
+            // Create corridor with proper texture repeat for each face
             const textTexture = createTextTexture(wallText);
 
-            const materials = [
-                new THREE.MeshStandardMaterial({ map: textTexture, side: THREE.BackSide }), // Right
-                new THREE.MeshStandardMaterial({ map: textTexture, side: THREE.BackSide }), // Left
-                new THREE.MeshStandardMaterial({ map: textTexture, side: THREE.BackSide }), // Top
-                new THREE.MeshStandardMaterial({ map: textTexture, side: THREE.BackSide }), // Bottom
-                new THREE.MeshStandardMaterial({ map: textTexture, side: THREE.BackSide }), // Front
-                new THREE.MeshStandardMaterial({ map: textTexture, side: THREE.BackSide })  // Back
-            ];
+            // Create separate materials for each face with proper repeat
+            const materials = [];
+
+            // Right wall (long wall: 500 length x 4 height)
+            const rightTexture = textTexture.clone();
+            rightTexture.wrapS = THREE.RepeatWrapping;
+            rightTexture.wrapT = THREE.RepeatWrapping;
+            rightTexture.repeat.set(40, 1); // Repeat 40 times horizontally for 500m length
+            rightTexture.needsUpdate = true;
+            materials.push(new THREE.MeshStandardMaterial({ map: rightTexture, side: THREE.BackSide }));
+
+            // Left wall (long wall: 500 length x 4 height)
+            const leftTexture = textTexture.clone();
+            leftTexture.wrapS = THREE.RepeatWrapping;
+            leftTexture.wrapT = THREE.RepeatWrapping;
+            leftTexture.repeat.set(40, 1);
+            leftTexture.needsUpdate = true;
+            materials.push(new THREE.MeshStandardMaterial({ map: leftTexture, side: THREE.BackSide }));
+
+            // Top (long: 500 length x 6 width)
+            const topTexture = textTexture.clone();
+            topTexture.wrapS = THREE.RepeatWrapping;
+            topTexture.wrapT = THREE.RepeatWrapping;
+            topTexture.repeat.set(40, 1);
+            topTexture.needsUpdate = true;
+            materials.push(new THREE.MeshStandardMaterial({ map: topTexture, side: THREE.BackSide }));
+
+            // Bottom (long: 500 length x 6 width)
+            const bottomTexture = textTexture.clone();
+            bottomTexture.wrapS = THREE.RepeatWrapping;
+            bottomTexture.wrapT = THREE.RepeatWrapping;
+            bottomTexture.repeat.set(40, 1);
+            bottomTexture.needsUpdate = true;
+            materials.push(new THREE.MeshStandardMaterial({ map: bottomTexture, side: THREE.BackSide }));
+
+            // Front wall (6 width x 4 height - normal)
+            const frontTexture = textTexture.clone();
+            frontTexture.wrapS = THREE.RepeatWrapping;
+            frontTexture.wrapT = THREE.RepeatWrapping;
+            frontTexture.repeat.set(1, 1);
+            frontTexture.needsUpdate = true;
+            materials.push(new THREE.MeshStandardMaterial({ map: frontTexture, side: THREE.BackSide }));
+
+            // Back wall (6 width x 4 height - normal)
+            const backTexture = textTexture.clone();
+            backTexture.wrapS = THREE.RepeatWrapping;
+            backTexture.wrapT = THREE.RepeatWrapping;
+            backTexture.repeat.set(1, 1);
+            backTexture.needsUpdate = true;
+            materials.push(new THREE.MeshStandardMaterial({ map: backTexture, side: THREE.BackSide }));
 
             // Long corridor box (6 width, 4 height, 500 length)
             const corridorGeometry = new THREE.BoxGeometry(6, 4, 500);
