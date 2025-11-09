@@ -445,7 +445,7 @@
             // Create separate materials for each face with continuous text
             const materials = [];
 
-            // Right wall (long wall: 500 length x 6 height)
+            // Right wall (long wall: 500 length x 10 height)
             const rightTexture = textTexture.clone();
             rightTexture.wrapS = THREE.RepeatWrapping;
             rightTexture.wrapT = THREE.RepeatWrapping;
@@ -460,7 +460,7 @@
                 emissiveIntensity: 0.8
             }));
 
-            // Left wall (long wall: 500 length x 6 height)
+            // Left wall (long wall: 500 length x 10 height)
             const leftTexture = textTexture.clone();
             leftTexture.wrapS = THREE.RepeatWrapping;
             leftTexture.wrapT = THREE.RepeatWrapping;
@@ -505,7 +505,7 @@
                 emissiveIntensity: 0.8
             }));
 
-            // Front wall (6 width x 6 height - normal)
+            // Front wall (6 width x 10 height - normal)
             const frontTexture = textTexture.clone();
             frontTexture.wrapS = THREE.RepeatWrapping;
             frontTexture.wrapT = THREE.RepeatWrapping;
@@ -513,7 +513,7 @@
             frontTexture.needsUpdate = true;
             materials.push(new THREE.MeshStandardMaterial({ map: frontTexture, side: THREE.BackSide }));
 
-            // Back wall (6 width x 6 height - normal)
+            // Back wall (6 width x 10 height - normal)
             const backTexture = textTexture.clone();
             backTexture.wrapS = THREE.RepeatWrapping;
             backTexture.wrapT = THREE.RepeatWrapping;
@@ -521,13 +521,13 @@
             backTexture.needsUpdate = true;
             materials.push(new THREE.MeshStandardMaterial({ map: backTexture, side: THREE.BackSide }));
 
-            // Long corridor box (6 width, 6 height, 500 length) - Increased height
-            const corridorGeometry = new THREE.BoxGeometry(6, 6, 500);
+            // Long corridor box (6 width, 10 height, 500 length) - Increased height
+            const corridorGeometry = new THREE.BoxGeometry(6, 10, 500);
             corridor = new THREE.Mesh(corridorGeometry, materials);
             scene.add(corridor);
 
             // Add exit door at corridor end
-            createExitDoor(500, 6, 6);
+            createExitDoor(500, 6, 10);
         }
 
         // ===========================
