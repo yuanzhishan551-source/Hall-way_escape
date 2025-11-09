@@ -333,8 +333,8 @@
             renderer.shadowMap.type = THREE.BasicShadowMap; // Pixelated shadows
             document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-            // Ambient light (very dark)
-            const ambientLight = new THREE.AmbientLight(0x1a1a2e, 0.1);
+            // Ambient light (increased for visibility)
+            const ambientLight = new THREE.AmbientLight(0x1a1a2e, 0.3);
             scene.add(ambientLight);
 
             // Create flashlight group (moves with camera)
@@ -455,9 +455,9 @@
             materials.push(new THREE.MeshStandardMaterial({
                 map: rightTexture,
                 side: THREE.BackSide,
-                emissive: 0x222222,
+                emissive: 0x555555,
                 emissiveMap: rightTexture,
-                emissiveIntensity: 0.3
+                emissiveIntensity: 0.8
             }));
 
             // Left wall (long wall: 500 length x 6 height)
@@ -470,9 +470,9 @@
             materials.push(new THREE.MeshStandardMaterial({
                 map: leftTexture,
                 side: THREE.BackSide,
-                emissive: 0x222222,
+                emissive: 0x555555,
                 emissiveMap: leftTexture,
-                emissiveIntensity: 0.3
+                emissiveIntensity: 0.8
             }));
 
             // Top (ceiling: 500 length x 6 width) - Add emissive for visibility
@@ -485,9 +485,9 @@
             materials.push(new THREE.MeshStandardMaterial({
                 map: topTexture,
                 side: THREE.BackSide,
-                emissive: 0x333333,
+                emissive: 0x555555,
                 emissiveMap: topTexture,
-                emissiveIntensity: 0.5
+                emissiveIntensity: 0.8
             }));
 
             // Bottom (floor: 500 length x 6 width) - Add stronger emissive for visibility
@@ -500,9 +500,9 @@
             materials.push(new THREE.MeshStandardMaterial({
                 map: bottomTexture,
                 side: THREE.BackSide,
-                emissive: 0x444444,
+                emissive: 0x555555,
                 emissiveMap: bottomTexture,
-                emissiveIntensity: 0.6
+                emissiveIntensity: 0.8
             }));
 
             // Front wall (6 width x 6 height - normal)
