@@ -318,6 +318,16 @@
         let currentDirection = new THREE.Vector3(0, 0, -1); // Player facing direction
         let playerRotation = 0; // Player Y rotation in radians
 
+        // Checkpoint system
+        let checkpoints = [
+            { z: -100, passed: false, correctChoice: 'left', exitPanel: null }, // First checkpoint
+            { z: -200, passed: false, correctChoice: 'right', exitPanel: null }, // Second checkpoint
+            { z: -300, passed: false, correctChoice: 'left', exitPanel: null }  // Third checkpoint
+        ];
+        let currentCheckpoint = null;
+        let atCheckpoint = false;
+        let exitRevealed = false; // Track if exit is revealed by green light
+
         function init() {
             // Scene
             scene = new THREE.Scene();
@@ -532,8 +542,127 @@
             corridor = new THREE.Mesh(corridorGeometry, materials);
             scene.add(corridor);
 
-            // Add exit door at corridor end
-            createExitDoor(500, 6, 10);
+            // Exit door will be created after 3 correct choices
+            // createExitDoor(500, 6, 10);
+
+            // Create visual checkpoint markers
+            createCheckpointMarkers();
+        }
+
+        // ===========================
+        // CREATE CHECKPOINT MARKERS
+        // ===========================
+        function createCheckpointMarkers() {
+            checkpoints.forEach((checkpoint, index) => {
+                // Create floor marker with arrows indicating direction
+                const markerCanvas = document.createElement('canvas');
+                markerCanvas.width = 512;
+                markerCanvas.height = 512;
+                const ctx = markerCanvas.getContext('2d');
+
+                // Yellow glowing circle
+                ctx.fillStyle = '#ffaa00';
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = '#ffaa00';
+                ctx.beginPath();
+                ctx.arc(256, 256, 180, 0, Math.PI * 2);
+                ctx.fill();
+
+                // White inner circle
+                ctx.fillStyle = '#ffffff';
+                ctx.shadowBlur = 0;
+                ctx.beginPath();
+                ctx.arc(256, 256, 150, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Black text with checkpoint number
+                ctx.fillStyle = '#000000';
+                ctx.font = 'bold 120px monospace';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(`${index + 1}`, 256, 220);
+
+                // Arrows indicating left/right choice
+                ctx.font = 'bold 60px monospace';
+                ctx.fillText('Q←  →E', 256, 320);
+
+                const markerTexture = new THREE.CanvasTexture(markerCanvas);
+                markerTexture.magFilter = THREE.NearestFilter;
+                markerTexture.minFilter = THREE.NearestFilter;
+
+                const markerGeometry = new THREE.PlaneGeometry(3, 3);
+                const markerMaterial = new THREE.MeshStandardMaterial({
+                    map: markerTexture,
+                    transparent: true,
+                    emissive: 0xffaa00,
+                    emissiveIntensity: 0.5
+                });
+
+                const marker = new THREE.Mesh(markerGeometry, markerMaterial);
+                marker.rotation.x = -Math.PI / 2; // Lay flat on floor
+                marker.position.set(0, 0.01, checkpoint.z); // Slightly above floor to prevent z-fighting
+                scene.add(marker);
+
+                // Add pulsing light at checkpoint
+                const checkpointLight = new THREE.PointLight(0xffaa00, 0.8, 10);
+                checkpointLight.position.set(0, 2, checkpoint.z);
+                scene.add(checkpointLight);
+
+                // Store light reference for animation
+                checkpoint.light = checkpointLight;
+
+                // Create EXIT text panel on correct wall (initially invisible)
+                const exitCanvas = document.createElement('canvas');
+                exitCanvas.width = 1024;
+                exitCanvas.height = 512;
+                const exitCtx = exitCanvas.getContext('2d');
+
+                // Green glowing background
+                exitCtx.fillStyle = '#00ff00';
+                exitCtx.shadowBlur = 30;
+                exitCtx.shadowColor = '#00ff00';
+                exitCtx.fillRect(0, 0, exitCanvas.width, exitCanvas.height);
+
+                // Black EXIT text
+                exitCtx.shadowBlur = 0;
+                exitCtx.fillStyle = '#000000';
+                exitCtx.font = 'bold 200px monospace';
+                exitCtx.textAlign = 'center';
+                exitCtx.textBaseline = 'middle';
+                exitCtx.fillText('EXIT', exitCanvas.width / 2, exitCanvas.height / 2);
+
+                // Arrow pointing forward
+                exitCtx.font = 'bold 100px monospace';
+                exitCtx.fillText('↓', exitCanvas.width / 2, exitCanvas.height / 2 + 150);
+
+                const exitTexture = new THREE.CanvasTexture(exitCanvas);
+                exitTexture.magFilter = THREE.NearestFilter;
+                exitTexture.minFilter = THREE.NearestFilter;
+
+                const exitGeometry = new THREE.PlaneGeometry(4, 2);
+                const exitMaterial = new THREE.MeshStandardMaterial({
+                    map: exitTexture,
+                    transparent: true,
+                    opacity: 0, // Start invisible
+                    emissive: 0x00ff00,
+                    emissiveIntensity: 1.0,
+                    side: THREE.DoubleSide
+                });
+
+                const exitPanel = new THREE.Mesh(exitGeometry, exitMaterial);
+
+                // Position on correct wall
+                if (checkpoint.correctChoice === 'left') {
+                    exitPanel.position.set(-2.9, 3, checkpoint.z); // Left wall
+                    exitPanel.rotation.y = Math.PI / 2;
+                } else {
+                    exitPanel.position.set(2.9, 3, checkpoint.z); // Right wall
+                    exitPanel.rotation.y = -Math.PI / 2;
+                }
+
+                scene.add(exitPanel);
+                checkpoint.exitPanel = exitPanel;
+            });
         }
 
         // ===========================
@@ -726,6 +855,16 @@
                     case 'KeyS': state.moveBackward = true; break;
                     case 'KeyA': state.moveLeft = true; break;
                     case 'KeyD': state.moveRight = true; break;
+                    case 'KeyQ':
+                        if (atCheckpoint && currentCheckpoint) {
+                            handleCheckpointChoice('left');
+                        }
+                        break;
+                    case 'KeyE':
+                        if (atCheckpoint && currentCheckpoint) {
+                            handleCheckpointChoice('right');
+                        }
+                        break;
                 }
             });
 
@@ -791,6 +930,150 @@
             setTimeout(() => {
                 spotlight.intensity = mode.intensity;
             }, 100);
+        }
+
+        // ===========================
+        // CHECKPOINT SYSTEM
+        // ===========================
+        function handleCheckpointChoice(choice) {
+            if (!currentCheckpoint || currentCheckpoint.passed) return;
+
+            currentCheckpoint.passed = true;
+            atCheckpoint = false;
+
+            if (choice === currentCheckpoint.correctChoice) {
+                correctPathCount++;
+                console.log(`✅ Correct choice! Progress: ${correctPathCount}/3`);
+
+                // Update UI
+                document.getElementById('mode-indicator').textContent = `CORRECT PATHS: ${correctPathCount}/3`;
+                document.getElementById('mode-indicator').style.color = '#00ff00';
+
+                setTimeout(() => {
+                    document.getElementById('mode-indicator').textContent = `MODE: ${modes[state.currentMode].name}`;
+                    document.getElementById('mode-indicator').style.color = modes[state.currentMode].colorHex;
+                }, 2000);
+
+                // Check if all 3 correct - create exit door
+                if (correctPathCount >= 3) {
+                    createExitDoor(500, 6, 10);
+                    console.log('🚪 Exit door appeared!');
+                }
+            } else {
+                console.log(`❌ Wrong choice. Progress: ${correctPathCount}/3`);
+
+                // Flash red
+                document.getElementById('mode-indicator').textContent = `WRONG PATH`;
+                document.getElementById('mode-indicator').style.color = '#ff0000';
+
+                setTimeout(() => {
+                    document.getElementById('mode-indicator').textContent = `MODE: ${modes[state.currentMode].name}`;
+                    document.getElementById('mode-indicator').style.color = modes[state.currentMode].colorHex;
+                }, 2000);
+            }
+
+            currentCheckpoint = null;
+        }
+
+        function checkCheckpoints() {
+            // Check if player is near any checkpoint
+            for (let cp of checkpoints) {
+                if (!cp.passed && Math.abs(camera.position.z - cp.z) < 10) {
+                    if (!atCheckpoint) {
+                        atCheckpoint = true;
+                        currentCheckpoint = cp;
+                        console.log('📍 Checkpoint reached! Press Q (left) or E (right)');
+
+                        // Update UI
+                        document.getElementById('instructions').innerHTML = `
+                            CHECKPOINT!<br>
+                            Q: Choose LEFT<br>
+                            E: Choose RIGHT<br>
+                            Progress: ${correctPathCount}/3<br>
+                            <span style="color: #00ff00;">Use GREEN light to reveal EXIT</span>
+                        `;
+                    }
+                    return;
+                }
+            }
+
+            // Player left checkpoint area
+            if (atCheckpoint && currentCheckpoint && Math.abs(camera.position.z - currentCheckpoint.z) > 15) {
+                atCheckpoint = false;
+                currentCheckpoint = null;
+
+                // Reset UI
+                document.getElementById('instructions').innerHTML = `
+                    WASD: Move<br>
+                    MOUSE: Look Around<br>
+                    CLICK: Switch Mode<br>
+                    ESC: Unlock Mouse
+                `;
+            }
+        }
+
+        // ===========================
+        // UPDATE CHECKPOINT EFFECTS
+        // ===========================
+        function updateCheckpointEffects(delta) {
+            const time = Date.now() * 0.001;
+
+            checkpoints.forEach(checkpoint => {
+                // Pulse checkpoint light
+                if (checkpoint.light && !checkpoint.passed) {
+                    const pulse = Math.sin(time * 2) * 0.3 + 0.8;
+                    checkpoint.light.intensity = pulse;
+                }
+
+                // Check if green light is revealing EXIT panel
+                if (checkpoint.exitPanel && !checkpoint.passed &&
+                    state.currentMode === 1 && atCheckpoint && currentCheckpoint === checkpoint) {
+
+                    // Check if player is looking at the correct wall
+                    const distanceToPanel = checkpoint.exitPanel.position.distanceTo(camera.position);
+
+                    if (distanceToPanel < 15) { // Within reasonable viewing distance
+                        // Get direction camera is looking
+                        const cameraDirection = new THREE.Vector3(0, 0, -1);
+                        cameraDirection.applyQuaternion(camera.quaternion);
+
+                        // Get direction to EXIT panel
+                        const toPanelDirection = new THREE.Vector3();
+                        toPanelDirection.subVectors(checkpoint.exitPanel.position, camera.position);
+                        toPanelDirection.normalize();
+
+                        // Calculate angle
+                        const angle = Math.acos(cameraDirection.dot(toPanelDirection));
+
+                        // If looking at panel (within 45 degrees), reveal it
+                        if (angle < Math.PI / 4) {
+                            // Fade in EXIT panel
+                            checkpoint.exitPanel.material.opacity = Math.min(
+                                checkpoint.exitPanel.material.opacity + delta * 2,
+                                1.0
+                            );
+                        } else {
+                            // Fade out when not looking
+                            checkpoint.exitPanel.material.opacity = Math.max(
+                                checkpoint.exitPanel.material.opacity - delta * 3,
+                                0
+                            );
+                        }
+                    } else {
+                        // Fade out when too far
+                        checkpoint.exitPanel.material.opacity = Math.max(
+                            checkpoint.exitPanel.material.opacity - delta * 3,
+                            0
+                        );
+                    }
+                } else if (checkpoint.exitPanel && checkpoint.exitPanel.material.opacity > 0) {
+                    // Fade out if not at checkpoint or not using green light
+                    checkpoint.exitPanel.material.opacity = Math.max(
+                        checkpoint.exitPanel.material.opacity - delta * 3,
+                        0
+                    );
+                }
+            });
         }
 
         // ===========================
@@ -1262,6 +1545,8 @@
             if (!state.isGameOver && !state.escaped) {
                 updateMovement(delta);
                 updateMonsters(delta);
+                checkCheckpoints(); // Check if player is at a checkpoint
+                updateCheckpointEffects(delta); // Update checkpoint lights and EXIT panels
             }
 
             // Animate flowing text like code stream
