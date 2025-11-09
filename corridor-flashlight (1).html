@@ -1262,12 +1262,16 @@
             const time = Date.now() * 0.001;
             if (wallTextures.length >= 4) {
                 // Right and left walls: flow along corridor
-                wallTextures[0].offset.x = time * 0.05; // Right wall
-                wallTextures[1].offset.x = time * 0.05; // Left wall
+                wallTextures[0].offset.x = (time * 0.05) % 1; // Right wall - use modulo to prevent overflow
+                wallTextures[1].offset.x = (time * 0.05) % 1; // Left wall
+                wallTextures[0].needsUpdate = true;
+                wallTextures[1].needsUpdate = true;
 
                 // Ceiling and floor: flow horizontally
-                wallTextures[2].offset.y = time * 0.08; // Ceiling
-                wallTextures[3].offset.y = time * 0.08; // Floor
+                wallTextures[2].offset.y = (time * 0.08) % 1; // Ceiling
+                wallTextures[3].offset.y = (time * 0.08) % 1; // Floor
+                wallTextures[2].needsUpdate = true;
+                wallTextures[3].needsUpdate = true;
             }
 
             // Random flicker
