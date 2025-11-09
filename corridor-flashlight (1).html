@@ -716,17 +716,17 @@
 
                 // Create LEFT branch corridor using planes
                 const leftBranchGroup = new THREE.Group();
-                const branchLength = 15;
+                const branchLength = 18; // Extended to include connection to main corridor
                 const branchWidth = 3;
 
                 // Create text texture for branch
                 const branchTexture = createTextTexture(wallText);
 
-                // Left branch floor
+                // Left branch floor (extended to connect to main corridor)
                 const leftFloorTex = branchTexture.clone();
                 leftFloorTex.wrapS = THREE.RepeatWrapping;
                 leftFloorTex.wrapT = THREE.RepeatWrapping;
-                leftFloorTex.repeat.set(1, 5);
+                leftFloorTex.repeat.set(1, 6);
                 leftFloorTex.needsUpdate = true;
                 const leftFloorGeo = new THREE.PlaneGeometry(branchWidth, branchLength);
                 const leftFloorMat = new THREE.MeshStandardMaterial({
@@ -739,14 +739,14 @@
                 const leftFloor = new THREE.Mesh(leftFloorGeo, leftFloorMat);
                 leftFloor.rotation.x = -Math.PI / 2;
                 leftFloor.rotation.z = Math.PI / 2;
-                leftFloor.position.set(-3 - branchLength / 2, -5, checkpoint.z);
+                leftFloor.position.set(-branchLength / 2, -5, checkpoint.z); // Start from x=0 (main corridor center)
                 leftBranchGroup.add(leftFloor);
 
-                // Left branch ceiling
+                // Left branch ceiling (extended to connect to main corridor)
                 const leftCeilingTex = branchTexture.clone();
                 leftCeilingTex.wrapS = THREE.RepeatWrapping;
                 leftCeilingTex.wrapT = THREE.RepeatWrapping;
-                leftCeilingTex.repeat.set(1, 5);
+                leftCeilingTex.repeat.set(1, 6);
                 leftCeilingTex.needsUpdate = true;
                 const leftCeilingGeo = new THREE.PlaneGeometry(branchWidth, branchLength);
                 const leftCeilingMat = new THREE.MeshStandardMaterial({
@@ -759,14 +759,14 @@
                 const leftCeiling = new THREE.Mesh(leftCeilingGeo, leftCeilingMat);
                 leftCeiling.rotation.x = -Math.PI / 2;
                 leftCeiling.rotation.z = Math.PI / 2;
-                leftCeiling.position.set(-3 - branchLength / 2, 5, checkpoint.z);
+                leftCeiling.position.set(-branchLength / 2, 5, checkpoint.z); // Start from x=0
                 leftBranchGroup.add(leftCeiling);
 
                 // Left branch back wall
                 const leftBackWallTex = branchTexture.clone();
                 leftBackWallTex.wrapS = THREE.RepeatWrapping;
                 leftBackWallTex.wrapT = THREE.RepeatWrapping;
-                leftBackWallTex.repeat.set(3, 2);
+                leftBackWallTex.repeat.set(6, 2);
                 leftBackWallTex.needsUpdate = true;
                 const leftBackWallGeo = new THREE.PlaneGeometry(branchLength, 10);
                 const leftBackWallMat = new THREE.MeshStandardMaterial({
@@ -778,14 +778,14 @@
                 });
                 const leftBackWall = new THREE.Mesh(leftBackWallGeo, leftBackWallMat);
                 leftBackWall.rotation.y = Math.PI / 2;
-                leftBackWall.position.set(-3 - branchLength / 2, 0, checkpoint.z - branchWidth / 2);
+                leftBackWall.position.set(-branchLength / 2, 0, checkpoint.z - branchWidth / 2);
                 leftBranchGroup.add(leftBackWall);
 
                 // Left branch front wall
                 const leftFrontWallTex = branchTexture.clone();
                 leftFrontWallTex.wrapS = THREE.RepeatWrapping;
                 leftFrontWallTex.wrapT = THREE.RepeatWrapping;
-                leftFrontWallTex.repeat.set(3, 2);
+                leftFrontWallTex.repeat.set(6, 2);
                 leftFrontWallTex.needsUpdate = true;
                 const leftFrontWallGeo = new THREE.PlaneGeometry(branchLength, 10);
                 const leftFrontWallMat = new THREE.MeshStandardMaterial({
@@ -797,7 +797,7 @@
                 });
                 const leftFrontWall = new THREE.Mesh(leftFrontWallGeo, leftFrontWallMat);
                 leftFrontWall.rotation.y = Math.PI / 2;
-                leftFrontWall.position.set(-3 - branchLength / 2, 0, checkpoint.z + branchWidth / 2);
+                leftFrontWall.position.set(-branchLength / 2, 0, checkpoint.z + branchWidth / 2);
                 leftBranchGroup.add(leftFrontWall);
 
                 // Left branch end wall
@@ -811,7 +811,7 @@
                     emissiveIntensity: 0.8
                 });
                 const leftEndWall = new THREE.Mesh(leftEndWallGeo, leftEndWallMat);
-                leftEndWall.position.set(-3 - branchLength, 0, checkpoint.z);
+                leftEndWall.position.set(-branchLength, 0, checkpoint.z);
                 leftBranchGroup.add(leftEndWall);
 
                 scene.add(leftBranchGroup);
@@ -820,11 +820,11 @@
                 // Create RIGHT branch corridor using planes
                 const rightBranchGroup = new THREE.Group();
 
-                // Right branch floor
+                // Right branch floor (extended to connect to main corridor)
                 const rightFloorTex = branchTexture.clone();
                 rightFloorTex.wrapS = THREE.RepeatWrapping;
                 rightFloorTex.wrapT = THREE.RepeatWrapping;
-                rightFloorTex.repeat.set(1, 5);
+                rightFloorTex.repeat.set(1, 6);
                 rightFloorTex.needsUpdate = true;
                 const rightFloorGeo = new THREE.PlaneGeometry(branchWidth, branchLength);
                 const rightFloorMat = new THREE.MeshStandardMaterial({
@@ -837,14 +837,14 @@
                 const rightFloor = new THREE.Mesh(rightFloorGeo, rightFloorMat);
                 rightFloor.rotation.x = -Math.PI / 2;
                 rightFloor.rotation.z = Math.PI / 2;
-                rightFloor.position.set(3 + branchLength / 2, -5, checkpoint.z);
+                rightFloor.position.set(branchLength / 2, -5, checkpoint.z); // Start from x=0
                 rightBranchGroup.add(rightFloor);
 
-                // Right branch ceiling
+                // Right branch ceiling (extended to connect to main corridor)
                 const rightCeilingTex = branchTexture.clone();
                 rightCeilingTex.wrapS = THREE.RepeatWrapping;
                 rightCeilingTex.wrapT = THREE.RepeatWrapping;
-                rightCeilingTex.repeat.set(1, 5);
+                rightCeilingTex.repeat.set(1, 6);
                 rightCeilingTex.needsUpdate = true;
                 const rightCeilingGeo = new THREE.PlaneGeometry(branchWidth, branchLength);
                 const rightCeilingMat = new THREE.MeshStandardMaterial({
@@ -857,14 +857,14 @@
                 const rightCeiling = new THREE.Mesh(rightCeilingGeo, rightCeilingMat);
                 rightCeiling.rotation.x = -Math.PI / 2;
                 rightCeiling.rotation.z = Math.PI / 2;
-                rightCeiling.position.set(3 + branchLength / 2, 5, checkpoint.z);
+                rightCeiling.position.set(branchLength / 2, 5, checkpoint.z); // Start from x=0
                 rightBranchGroup.add(rightCeiling);
 
                 // Right branch back wall
                 const rightBackWallTex = branchTexture.clone();
                 rightBackWallTex.wrapS = THREE.RepeatWrapping;
                 rightBackWallTex.wrapT = THREE.RepeatWrapping;
-                rightBackWallTex.repeat.set(3, 2);
+                rightBackWallTex.repeat.set(6, 2);
                 rightBackWallTex.needsUpdate = true;
                 const rightBackWallGeo = new THREE.PlaneGeometry(branchLength, 10);
                 const rightBackWallMat = new THREE.MeshStandardMaterial({
@@ -876,14 +876,14 @@
                 });
                 const rightBackWall = new THREE.Mesh(rightBackWallGeo, rightBackWallMat);
                 rightBackWall.rotation.y = Math.PI / 2;
-                rightBackWall.position.set(3 + branchLength / 2, 0, checkpoint.z - branchWidth / 2);
+                rightBackWall.position.set(branchLength / 2, 0, checkpoint.z - branchWidth / 2);
                 rightBranchGroup.add(rightBackWall);
 
                 // Right branch front wall
                 const rightFrontWallTex = branchTexture.clone();
                 rightFrontWallTex.wrapS = THREE.RepeatWrapping;
                 rightFrontWallTex.wrapT = THREE.RepeatWrapping;
-                rightFrontWallTex.repeat.set(3, 2);
+                rightFrontWallTex.repeat.set(6, 2);
                 rightFrontWallTex.needsUpdate = true;
                 const rightFrontWallGeo = new THREE.PlaneGeometry(branchLength, 10);
                 const rightFrontWallMat = new THREE.MeshStandardMaterial({
@@ -895,7 +895,7 @@
                 });
                 const rightFrontWall = new THREE.Mesh(rightFrontWallGeo, rightFrontWallMat);
                 rightFrontWall.rotation.y = Math.PI / 2;
-                rightFrontWall.position.set(3 + branchLength / 2, 0, checkpoint.z + branchWidth / 2);
+                rightFrontWall.position.set(branchLength / 2, 0, checkpoint.z + branchWidth / 2);
                 rightBranchGroup.add(rightFrontWall);
 
                 // Right branch end wall
@@ -909,7 +909,7 @@
                     emissiveIntensity: 0.8
                 });
                 const rightEndWall = new THREE.Mesh(rightEndWallGeo, rightEndWallMat);
-                rightEndWall.position.set(3 + branchLength, 0, checkpoint.z);
+                rightEndWall.position.set(branchLength, 0, checkpoint.z);
                 rightBranchGroup.add(rightEndWall);
 
                 scene.add(rightBranchGroup);
@@ -1388,42 +1388,99 @@
 
             const speed = 5.0;
 
-            state.velocity.x -= state.velocity.x * 10.0 * delta;
-            state.velocity.z -= state.velocity.z * 10.0 * delta;
+            // Store old position for collision detection
+            const oldX = camera.position.x;
+            const oldZ = camera.position.z;
 
-            state.direction.z = Number(state.moveForward) - Number(state.moveBackward);
-            state.direction.x = Number(state.moveRight) - Number(state.moveLeft);
-            state.direction.normalize();
+            // Calculate forward and right vectors based on camera rotation
+            const forward = new THREE.Vector3();
+            const right = new THREE.Vector3();
 
-            if (state.moveForward || state.moveBackward) {
-                state.velocity.z -= state.direction.z * speed * delta;
+            // Forward direction (where camera is looking in XZ plane)
+            forward.set(
+                -Math.sin(camera.rotation.y),
+                0,
+                -Math.cos(camera.rotation.y)
+            );
+
+            // Right direction (perpendicular to forward in XZ plane)
+            right.set(
+                Math.cos(camera.rotation.y),
+                0,
+                -Math.sin(camera.rotation.y)
+            );
+
+            // Apply movement based on WASD
+            if (state.moveForward) {
+                camera.position.x += forward.x * speed * delta;
+                camera.position.z += forward.z * speed * delta;
             }
-            if (state.moveLeft || state.moveRight) {
-                state.velocity.x += state.direction.x * speed * delta; // Fixed: changed -= to +=
+            if (state.moveBackward) {
+                camera.position.x -= forward.x * speed * delta;
+                camera.position.z -= forward.z * speed * delta;
+            }
+            if (state.moveLeft) {
+                camera.position.x -= right.x * speed * delta;
+                camera.position.z -= right.z * speed * delta;
+            }
+            if (state.moveRight) {
+                camera.position.x += right.x * speed * delta;
+                camera.position.z += right.z * speed * delta;
             }
 
-            // Apply velocity
-            camera.position.x += state.velocity.x * Math.cos(camera.rotation.y) - state.velocity.z * Math.sin(camera.rotation.y);
-            camera.position.z += state.velocity.x * Math.sin(camera.rotation.y) + state.velocity.z * Math.cos(camera.rotation.y);
+            // Collision detection and boundary checking
+            let inBranch = false;
+            let nearIntersection = false;
 
-            // Dynamic corridor bounds - allow wider range at intersections
-            let minX = -2.5;
-            let maxX = 2.5;
-
-            // Check if near any intersection
+            // Check if player is in a branch corridor
             for (let checkpoint of checkpoints) {
                 const distToCheckpoint = Math.abs(camera.position.z - checkpoint.z);
-                if (distToCheckpoint < 5) {
-                    // At intersection - allow access to branch corridors
-                    minX = -20; // Allow entering left branch
-                    maxX = 20;  // Allow entering right branch
+
+                // Check if in left branch
+                if (distToCheckpoint < 2 && camera.position.x < -3) {
+                    inBranch = true;
+                    // Constrain to left branch bounds
+                    camera.position.x = Math.max(-18, Math.min(-0.5, camera.position.x));
+                    camera.position.z = Math.max(checkpoint.z - 1.5, Math.min(checkpoint.z + 1.5, camera.position.z));
+
+                    // Check collision with branch end wall
+                    if (camera.position.x < -17.5) {
+                        camera.position.x = -17.5;
+                    }
                     break;
+                }
+                // Check if in right branch
+                else if (distToCheckpoint < 2 && camera.position.x > 3) {
+                    inBranch = true;
+                    // Constrain to right branch bounds
+                    camera.position.x = Math.max(0.5, Math.min(18, camera.position.x));
+                    camera.position.z = Math.max(checkpoint.z - 1.5, Math.min(checkpoint.z + 1.5, camera.position.z));
+
+                    // Check collision with branch end wall
+                    if (camera.position.x > 17.5) {
+                        camera.position.x = 17.5;
+                    }
+                    break;
+                }
+                // Near intersection but not in branch
+                else if (distToCheckpoint < 5) {
+                    nearIntersection = true;
                 }
             }
 
-            // Keep player in corridor bounds
-            camera.position.x = Math.max(minX, Math.min(maxX, camera.position.x));
-            camera.position.z = Math.max(-252, Math.min(245, camera.position.z));
+            // If not in branch, apply main corridor bounds
+            if (!inBranch) {
+                if (nearIntersection) {
+                    // Allow wider movement near intersections
+                    camera.position.x = Math.max(-20, Math.min(20, camera.position.x));
+                } else {
+                    // Normal corridor width
+                    camera.position.x = Math.max(-2.5, Math.min(2.5, camera.position.x));
+                }
+
+                // Main corridor length bounds
+                camera.position.z = Math.max(-252, Math.min(245, camera.position.z));
+            }
 
             // Check if player reached exit door (escaped)
             if (camera.position.z < -249) {
