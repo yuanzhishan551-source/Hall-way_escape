@@ -403,23 +403,23 @@
             // Create very long continuous text by repeating characters (no spaces)
             const chars = text.replace(/ /g, ''); // Remove all spaces from source
             let longText = '';
-            for (let i = 0; i < 1000; i++) { // More repetitions for character-level
+            for (let i = 0; i < 3000; i++) { // More characters to fill canvas completely
                 longText += chars.charAt(Math.floor(Math.random() * chars.length));
             }
 
-            let y = 100;
-            let x = 50;
-            const lineHeight = 120;
+            let y = 72; // Start from top (font size)
+            let x = 0; // No left margin
+            const lineHeight = 80; // Tighter line spacing
 
             // Fill the entire canvas with continuous text character by character (zero spacing)
             for (let i = 0; i < longText.length; i++) {
                 const char = longText.charAt(i);
                 const metrics = ctx.measureText(char);
 
-                if (x + metrics.width > width - 50) {
-                    x = 50;
+                if (x + metrics.width > width) { // Fill to right edge
+                    x = 0;
                     y += lineHeight;
-                    if (y > height - 100) break;
+                    if (y > height) break; // Fill to bottom edge
                 }
 
                 ctx.fillText(char, x, y);
