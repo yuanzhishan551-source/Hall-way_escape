@@ -398,24 +398,23 @@
             ctx.fillRect(0, 0, width, height);
 
             ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 72px Courier New'; // Increased from 56px to 72px
+            ctx.font = 'bold 72px Courier New';
 
-            // Create very long continuous text by repeating the words
-            const words = text.split(' ');
+            // Create very long continuous text by repeating characters (no spaces)
+            const chars = text.replace(/ /g, ''); // Remove all spaces from source
             let longText = '';
-            for (let i = 0; i < 200; i++) { // Repeat many times
-                longText += words[Math.floor(Math.random() * words.length)] + ' ';
+            for (let i = 0; i < 1000; i++) { // More repetitions for character-level
+                longText += chars.charAt(Math.floor(Math.random() * chars.length));
             }
 
             let y = 100;
             let x = 50;
             const lineHeight = 120;
 
-            // Fill the entire canvas with continuous text
-            const allWords = longText.split(' ');
-            for (let i = 0; i < allWords.length; i++) {
-                const word = allWords[i];
-                const metrics = ctx.measureText(word + ' ');
+            // Fill the entire canvas with continuous text character by character (zero spacing)
+            for (let i = 0; i < longText.length; i++) {
+                const char = longText.charAt(i);
+                const metrics = ctx.measureText(char);
 
                 if (x + metrics.width > width - 50) {
                     x = 50;
@@ -423,8 +422,8 @@
                     if (y > height - 100) break;
                 }
 
-                ctx.fillText(word, x, y);
-                x += metrics.width;
+                ctx.fillText(char, x, y);
+                x += metrics.width; // Exact character width, no extra spacing
             }
 
             const texture = new THREE.CanvasTexture(canvas);
