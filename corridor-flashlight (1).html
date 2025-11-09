@@ -460,32 +460,32 @@
             leftTexture.needsUpdate = true;
             materials.push(new THREE.MeshStandardMaterial({ map: leftTexture, side: THREE.BackSide }));
 
-            // Top (long: 500 length x 6 width) - Add emissive for visibility
+            // Top (ceiling: 500 length x 6 width) - Add emissive for visibility
             const topTexture = textTexture.clone();
             topTexture.wrapS = THREE.RepeatWrapping;
             topTexture.wrapT = THREE.RepeatWrapping;
-            topTexture.repeat.set(40, 1); // Orient text along corridor length
+            topTexture.repeat.set(1, 40); // Swap UV for horizontal surface
             topTexture.needsUpdate = true;
             materials.push(new THREE.MeshStandardMaterial({
                 map: topTexture,
                 side: THREE.BackSide,
-                emissive: 0x222222,
+                emissive: 0x333333,
                 emissiveMap: topTexture,
-                emissiveIntensity: 0.3
+                emissiveIntensity: 0.5
             }));
 
-            // Bottom (long: 500 length x 6 width) - Add emissive for visibility
+            // Bottom (floor: 500 length x 6 width) - Add stronger emissive for visibility
             const bottomTexture = textTexture.clone();
             bottomTexture.wrapS = THREE.RepeatWrapping;
             bottomTexture.wrapT = THREE.RepeatWrapping;
-            bottomTexture.repeat.set(40, 1); // Orient text along corridor length
+            bottomTexture.repeat.set(1, 40); // Swap UV for horizontal surface
             bottomTexture.needsUpdate = true;
             materials.push(new THREE.MeshStandardMaterial({
                 map: bottomTexture,
                 side: THREE.BackSide,
-                emissive: 0x222222,
+                emissive: 0x444444,
                 emissiveMap: bottomTexture,
-                emissiveIntensity: 0.3
+                emissiveIntensity: 0.6
             }));
 
             // Front wall (6 width x 6 height - normal)
