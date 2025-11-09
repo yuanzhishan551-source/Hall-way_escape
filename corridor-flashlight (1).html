@@ -398,7 +398,7 @@
             ctx.fillRect(0, 0, width, height);
 
             ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 72px Courier New';
+            ctx.font = 'bold 96px Courier New'; // Increased font size
 
             // Create very long continuous text by repeating characters (no spaces)
             const chars = text.replace(/ /g, ''); // Remove all spaces from source
@@ -407,9 +407,9 @@
                 longText += chars.charAt(Math.floor(Math.random() * chars.length));
             }
 
-            let y = 72; // Start from top (font size)
+            let y = 96; // Start from top (font size)
             let x = 0; // No left margin
-            const lineHeight = 100; // Increased line spacing for readability
+            const lineHeight = 130; // Wider line spacing for better readability
 
             // Fill the entire canvas with continuous text character by character (zero spacing)
             for (let i = 0; i < longText.length; i++) {
