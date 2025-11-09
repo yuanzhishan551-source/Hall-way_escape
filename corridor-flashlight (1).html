@@ -460,21 +460,33 @@
             leftTexture.needsUpdate = true;
             materials.push(new THREE.MeshStandardMaterial({ map: leftTexture, side: THREE.BackSide }));
 
-            // Top (long: 500 length x 6 width)
+            // Top (long: 500 length x 6 width) - Add emissive for visibility
             const topTexture = textTexture.clone();
             topTexture.wrapS = THREE.RepeatWrapping;
             topTexture.wrapT = THREE.RepeatWrapping;
             topTexture.repeat.set(50, 1);
             topTexture.needsUpdate = true;
-            materials.push(new THREE.MeshStandardMaterial({ map: topTexture, side: THREE.BackSide }));
+            materials.push(new THREE.MeshStandardMaterial({
+                map: topTexture,
+                side: THREE.BackSide,
+                emissive: 0x222222,
+                emissiveMap: topTexture,
+                emissiveIntensity: 0.3
+            }));
 
-            // Bottom (long: 500 length x 6 width)
+            // Bottom (long: 500 length x 6 width) - Add emissive for visibility
             const bottomTexture = textTexture.clone();
             bottomTexture.wrapS = THREE.RepeatWrapping;
             bottomTexture.wrapT = THREE.RepeatWrapping;
             bottomTexture.repeat.set(50, 1);
             bottomTexture.needsUpdate = true;
-            materials.push(new THREE.MeshStandardMaterial({ map: bottomTexture, side: THREE.BackSide }));
+            materials.push(new THREE.MeshStandardMaterial({
+                map: bottomTexture,
+                side: THREE.BackSide,
+                emissive: 0x222222,
+                emissiveMap: bottomTexture,
+                emissiveIntensity: 0.3
+            }));
 
             // Front wall (6 width x 6 height - normal)
             const frontTexture = textTexture.clone();
