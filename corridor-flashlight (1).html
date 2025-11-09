@@ -448,7 +448,7 @@
             const rightTexture = textTexture.clone();
             rightTexture.wrapS = THREE.RepeatWrapping;
             rightTexture.wrapT = THREE.RepeatWrapping;
-            rightTexture.repeat.set(50, 1); // Reduced repeat for larger continuous blocks
+            rightTexture.repeat.set(40, 1); // Adjust ratio to reduce stretching
             rightTexture.needsUpdate = true;
             materials.push(new THREE.MeshStandardMaterial({ map: rightTexture, side: THREE.BackSide }));
 
@@ -456,7 +456,7 @@
             const leftTexture = textTexture.clone();
             leftTexture.wrapS = THREE.RepeatWrapping;
             leftTexture.wrapT = THREE.RepeatWrapping;
-            leftTexture.repeat.set(50, 1);
+            leftTexture.repeat.set(40, 1);
             leftTexture.needsUpdate = true;
             materials.push(new THREE.MeshStandardMaterial({ map: leftTexture, side: THREE.BackSide }));
 
@@ -464,7 +464,7 @@
             const topTexture = textTexture.clone();
             topTexture.wrapS = THREE.RepeatWrapping;
             topTexture.wrapT = THREE.RepeatWrapping;
-            topTexture.repeat.set(50, 1); // Orient text along corridor length
+            topTexture.repeat.set(40, 1); // Orient text along corridor length
             topTexture.needsUpdate = true;
             materials.push(new THREE.MeshStandardMaterial({
                 map: topTexture,
@@ -478,7 +478,7 @@
             const bottomTexture = textTexture.clone();
             bottomTexture.wrapS = THREE.RepeatWrapping;
             bottomTexture.wrapT = THREE.RepeatWrapping;
-            bottomTexture.repeat.set(50, 1); // Orient text along corridor length
+            bottomTexture.repeat.set(40, 1); // Orient text along corridor length
             bottomTexture.needsUpdate = true;
             materials.push(new THREE.MeshStandardMaterial({
                 map: bottomTexture,
