@@ -320,9 +320,9 @@
 
         // Checkpoint system
         let checkpoints = [
-            { z: -100, passed: false, correctChoice: 'left', exitPanel: null }, // First checkpoint
-            { z: -200, passed: false, correctChoice: 'right', exitPanel: null }, // Second checkpoint
-            { z: -300, passed: false, correctChoice: 'left', exitPanel: null }  // Third checkpoint
+            { z: -100, passed: false, correctChoice: 'left', exitPanel: null, leftDoor: null, rightDoor: null, leftBlock: null, rightBlock: null }, // First checkpoint
+            { z: -200, passed: false, correctChoice: 'right', exitPanel: null, leftDoor: null, rightDoor: null, leftBlock: null, rightBlock: null }, // Second checkpoint
+            { z: -300, passed: false, correctChoice: 'left', exitPanel: null, leftDoor: null, rightDoor: null, leftBlock: null, rightBlock: null }  // Third checkpoint
         ];
         let currentCheckpoint = null;
         let atCheckpoint = false;
@@ -662,6 +662,91 @@
 
                 scene.add(exitPanel);
                 checkpoint.exitPanel = exitPanel;
+
+                // Create LEFT door opening with frame
+                const leftDoorGroup = new THREE.Group();
+
+                // Door frame (white border)
+                const doorFrameGeometry = new THREE.BoxGeometry(0.2, 8, 3);
+                const doorFrameMaterial = new THREE.MeshStandardMaterial({
+                    color: 0x666666,
+                    emissive: 0x333333,
+                    emissiveIntensity: 0.3
+                });
+
+                // Left frame post
+                const leftFramePost = new THREE.Mesh(doorFrameGeometry, doorFrameMaterial);
+                leftFramePost.position.set(-2.95, 4, checkpoint.z);
+                leftDoorGroup.add(leftFramePost);
+
+                // Top frame
+                const topFrameGeometry = new THREE.BoxGeometry(3, 8, 0.2);
+                const leftTopFrame = new THREE.Mesh(topFrameGeometry, doorFrameMaterial);
+                leftTopFrame.position.set(-4.45, 4, checkpoint.z);
+                leftTopFrame.rotation.y = Math.PI / 2;
+                leftDoorGroup.add(leftTopFrame);
+
+                // Dark passage interior (black plane to simulate depth)
+                const passageGeometry = new THREE.PlaneGeometry(3, 8);
+                const passageMaterial = new THREE.MeshStandardMaterial({
+                    color: 0x000000,
+                    emissive: 0x001100,
+                    emissiveIntensity: 0.1
+                });
+                const leftPassage = new THREE.Mesh(passageGeometry, passageMaterial);
+                leftPassage.position.set(-2.95, 4, checkpoint.z);
+                leftPassage.rotation.y = Math.PI / 2;
+                leftDoorGroup.add(leftPassage);
+
+                scene.add(leftDoorGroup);
+                checkpoint.leftDoor = leftDoorGroup;
+
+                // Create RIGHT door opening with frame
+                const rightDoorGroup = new THREE.Group();
+
+                // Right frame post
+                const rightFramePost = new THREE.Mesh(doorFrameGeometry, doorFrameMaterial);
+                rightFramePost.position.set(2.95, 4, checkpoint.z);
+                rightDoorGroup.add(rightFramePost);
+
+                // Top frame
+                const rightTopFrame = new THREE.Mesh(topFrameGeometry, doorFrameMaterial);
+                rightTopFrame.position.set(4.45, 4, checkpoint.z);
+                rightTopFrame.rotation.y = Math.PI / 2;
+                rightDoorGroup.add(rightTopFrame);
+
+                // Dark passage interior
+                const rightPassage = new THREE.Mesh(passageGeometry, passageMaterial);
+                rightPassage.position.set(2.95, 4, checkpoint.z);
+                rightPassage.rotation.y = -Math.PI / 2;
+                rightDoorGroup.add(rightPassage);
+
+                scene.add(rightDoorGroup);
+                checkpoint.rightDoor = rightDoorGroup;
+
+                // Create blocking walls (initially invisible, will appear for wrong choices)
+                const blockWallGeometry = new THREE.PlaneGeometry(3, 8);
+                const blockWallMaterial = new THREE.MeshStandardMaterial({
+                    color: 0x330000,
+                    transparent: true,
+                    opacity: 0,
+                    emissive: 0xff0000,
+                    emissiveIntensity: 0
+                });
+
+                // Left blocking wall
+                const leftBlock = new THREE.Mesh(blockWallGeometry, blockWallMaterial.clone());
+                leftBlock.position.set(-2.95, 4, checkpoint.z);
+                leftBlock.rotation.y = Math.PI / 2;
+                scene.add(leftBlock);
+                checkpoint.leftBlock = leftBlock;
+
+                // Right blocking wall
+                const rightBlock = new THREE.Mesh(blockWallGeometry, blockWallMaterial.clone());
+                rightBlock.position.set(2.95, 4, checkpoint.z);
+                rightBlock.rotation.y = -Math.PI / 2;
+                scene.add(rightBlock);
+                checkpoint.rightBlock = rightBlock;
             });
         }
 
@@ -954,6 +1039,21 @@
                     document.getElementById('mode-indicator').style.color = modes[state.currentMode].colorHex;
                 }, 2000);
 
+                // Block the wrong path - close the door with red wall
+                if (choice === 'left') {
+                    // Block right door
+                    if (currentCheckpoint.rightBlock) {
+                        currentCheckpoint.rightBlock.material.opacity = 0.9;
+                        currentCheckpoint.rightBlock.material.emissiveIntensity = 0.5;
+                    }
+                } else {
+                    // Block left door
+                    if (currentCheckpoint.leftBlock) {
+                        currentCheckpoint.leftBlock.material.opacity = 0.9;
+                        currentCheckpoint.leftBlock.material.emissiveIntensity = 0.5;
+                    }
+                }
+
                 // Check if all 3 correct - create exit door
                 if (correctPathCount >= 3) {
                     createExitDoor(500, 6, 10);
@@ -970,6 +1070,19 @@
                     document.getElementById('mode-indicator').textContent = `MODE: ${modes[state.currentMode].name}`;
                     document.getElementById('mode-indicator').style.color = modes[state.currentMode].colorHex;
                 }, 2000);
+
+                // Block the chosen wrong path
+                if (choice === 'left') {
+                    if (currentCheckpoint.leftBlock) {
+                        currentCheckpoint.leftBlock.material.opacity = 0.9;
+                        currentCheckpoint.leftBlock.material.emissiveIntensity = 0.5;
+                    }
+                } else {
+                    if (currentCheckpoint.rightBlock) {
+                        currentCheckpoint.rightBlock.material.opacity = 0.9;
+                        currentCheckpoint.rightBlock.material.emissiveIntensity = 0.5;
+                    }
+                }
             }
 
             currentCheckpoint = null;
