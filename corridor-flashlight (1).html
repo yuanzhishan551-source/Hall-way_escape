@@ -1406,8 +1406,23 @@
             camera.position.x += state.velocity.x * Math.cos(camera.rotation.y) - state.velocity.z * Math.sin(camera.rotation.y);
             camera.position.z += state.velocity.x * Math.sin(camera.rotation.y) + state.velocity.z * Math.cos(camera.rotation.y);
 
-            // Keep player in corridor bounds (500m corridor)
-            camera.position.x = Math.max(-2.5, Math.min(2.5, camera.position.x));
+            // Dynamic corridor bounds - allow wider range at intersections
+            let minX = -2.5;
+            let maxX = 2.5;
+
+            // Check if near any intersection
+            for (let checkpoint of checkpoints) {
+                const distToCheckpoint = Math.abs(camera.position.z - checkpoint.z);
+                if (distToCheckpoint < 5) {
+                    // At intersection - allow access to branch corridors
+                    minX = -20; // Allow entering left branch
+                    maxX = 20;  // Allow entering right branch
+                    break;
+                }
+            }
+
+            // Keep player in corridor bounds
+            camera.position.x = Math.max(minX, Math.min(maxX, camera.position.x));
             camera.position.z = Math.max(-252, Math.min(245, camera.position.z));
 
             // Check if player reached exit door (escaped)
