@@ -452,7 +452,13 @@
             rightTexture.repeat.set(40, 1); // Adjust ratio to reduce stretching
             rightTexture.needsUpdate = true;
             wallTextures.push(rightTexture); // Store for animation
-            materials.push(new THREE.MeshStandardMaterial({ map: rightTexture, side: THREE.BackSide }));
+            materials.push(new THREE.MeshStandardMaterial({
+                map: rightTexture,
+                side: THREE.BackSide,
+                emissive: 0x222222,
+                emissiveMap: rightTexture,
+                emissiveIntensity: 0.3
+            }));
 
             // Left wall (long wall: 500 length x 6 height)
             const leftTexture = textTexture.clone();
@@ -461,7 +467,13 @@
             leftTexture.repeat.set(40, 1);
             leftTexture.needsUpdate = true;
             wallTextures.push(leftTexture); // Store for animation
-            materials.push(new THREE.MeshStandardMaterial({ map: leftTexture, side: THREE.BackSide }));
+            materials.push(new THREE.MeshStandardMaterial({
+                map: leftTexture,
+                side: THREE.BackSide,
+                emissive: 0x222222,
+                emissiveMap: leftTexture,
+                emissiveIntensity: 0.3
+            }));
 
             // Top (ceiling: 500 length x 6 width) - Add emissive for visibility
             const topTexture = textTexture.clone();
