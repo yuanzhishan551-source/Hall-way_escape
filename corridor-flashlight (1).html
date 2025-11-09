@@ -318,6 +318,9 @@
         let currentDirection = new THREE.Vector3(0, 0, -1); // Player facing direction
         let playerRotation = 0; // Player Y rotation in radians
 
+        // Wall text for textures
+        const wallText = `RUN ESCAPE DANGER GET OUT FLEE WARNING EXIT HURRY # | / \\ - + = * : . X H M W N data information technology digital world artificial intelligence machine learning algorithm code programming software development BUG ERROR SYSTEM CORRUPTED`;
+
         // Checkpoint system
         let checkpoints = [
             { z: -100, passed: false, correctChoice: 'left', exitPanel: null, leftDoor: null, rightDoor: null, leftBlock: null, rightBlock: null }, // First checkpoint
@@ -452,9 +455,6 @@
         // CREATE 3D CORRIDOR
         // ===========================
         function createCorridor() {
-            // Sample text with warnings
-            const wallText = `RUN ESCAPE DANGER GET OUT FLEE WARNING EXIT HURRY # | / \\ - + = * : . X H M W N data information technology digital world artificial intelligence machine learning algorithm code programming software development BUG ERROR SYSTEM CORRUPTED`;
-
             // Create text texture
             const textTexture = createTextTexture(wallText);
 
@@ -663,66 +663,177 @@
                 scene.add(exitPanel);
                 checkpoint.exitPanel = exitPanel;
 
-                // Create LEFT door opening with frame
-                const leftDoorGroup = new THREE.Group();
+                // Create LEFT branch corridor (extends to the left from main corridor)
+                const leftBranchGroup = new THREE.Group();
 
-                // Door frame (white border)
-                const doorFrameGeometry = new THREE.BoxGeometry(0.2, 8, 3);
-                const doorFrameMaterial = new THREE.MeshStandardMaterial({
-                    color: 0x666666,
-                    emissive: 0x333333,
-                    emissiveIntensity: 0.3
-                });
+                // Create text texture for branch corridors (reuse from main)
+                const branchTextTexture = createTextTexture(wallText);
 
-                // Left frame post
-                const leftFramePost = new THREE.Mesh(doorFrameGeometry, doorFrameMaterial);
-                leftFramePost.position.set(-2.95, 4, checkpoint.z);
-                leftDoorGroup.add(leftFramePost);
+                // Left corridor dimensions: 3 width x 10 height x 15 length
+                const branchCorridorMaterials = [];
 
-                // Top frame
-                const topFrameGeometry = new THREE.BoxGeometry(3, 8, 0.2);
-                const leftTopFrame = new THREE.Mesh(topFrameGeometry, doorFrameMaterial);
-                leftTopFrame.position.set(-4.45, 4, checkpoint.z);
-                leftTopFrame.rotation.y = Math.PI / 2;
-                leftDoorGroup.add(leftTopFrame);
+                // Right wall of left branch
+                const leftBranchRightTex = branchTextTexture.clone();
+                leftBranchRightTex.wrapS = THREE.RepeatWrapping;
+                leftBranchRightTex.wrapT = THREE.RepeatWrapping;
+                leftBranchRightTex.repeat.set(15, 2);
+                leftBranchRightTex.needsUpdate = true;
+                branchCorridorMaterials.push(new THREE.MeshStandardMaterial({
+                    map: leftBranchRightTex,
+                    side: THREE.BackSide,
+                    emissive: 0x555555,
+                    emissiveMap: leftBranchRightTex,
+                    emissiveIntensity: 0.8
+                }));
 
-                // Dark passage interior (black plane to simulate depth)
-                const passageGeometry = new THREE.PlaneGeometry(3, 8);
-                const passageMaterial = new THREE.MeshStandardMaterial({
-                    color: 0x000000,
-                    emissive: 0x001100,
-                    emissiveIntensity: 0.1
-                });
-                const leftPassage = new THREE.Mesh(passageGeometry, passageMaterial);
-                leftPassage.position.set(-2.95, 4, checkpoint.z);
-                leftPassage.rotation.y = Math.PI / 2;
-                leftDoorGroup.add(leftPassage);
+                // Left wall of left branch
+                const leftBranchLeftTex = branchTextTexture.clone();
+                leftBranchLeftTex.wrapS = THREE.RepeatWrapping;
+                leftBranchLeftTex.wrapT = THREE.RepeatWrapping;
+                leftBranchLeftTex.repeat.set(15, 2);
+                leftBranchLeftTex.needsUpdate = true;
+                branchCorridorMaterials.push(new THREE.MeshStandardMaterial({
+                    map: leftBranchLeftTex,
+                    side: THREE.BackSide,
+                    emissive: 0x555555,
+                    emissiveMap: leftBranchLeftTex,
+                    emissiveIntensity: 0.8
+                }));
 
-                scene.add(leftDoorGroup);
-                checkpoint.leftDoor = leftDoorGroup;
+                // Top (ceiling)
+                const leftBranchTopTex = branchTextTexture.clone();
+                leftBranchTopTex.wrapS = THREE.RepeatWrapping;
+                leftBranchTopTex.wrapT = THREE.RepeatWrapping;
+                leftBranchTopTex.repeat.set(1, 15);
+                leftBranchTopTex.needsUpdate = true;
+                branchCorridorMaterials.push(new THREE.MeshStandardMaterial({
+                    map: leftBranchTopTex,
+                    side: THREE.BackSide,
+                    emissive: 0x555555,
+                    emissiveMap: leftBranchTopTex,
+                    emissiveIntensity: 0.8
+                }));
 
-                // Create RIGHT door opening with frame
-                const rightDoorGroup = new THREE.Group();
+                // Bottom (floor)
+                const leftBranchBottomTex = branchTextTexture.clone();
+                leftBranchBottomTex.wrapS = THREE.RepeatWrapping;
+                leftBranchBottomTex.wrapT = THREE.RepeatWrapping;
+                leftBranchBottomTex.repeat.set(1, 15);
+                leftBranchBottomTex.needsUpdate = true;
+                branchCorridorMaterials.push(new THREE.MeshStandardMaterial({
+                    map: leftBranchBottomTex,
+                    side: THREE.BackSide,
+                    emissive: 0x555555,
+                    emissiveMap: leftBranchBottomTex,
+                    emissiveIntensity: 0.8
+                }));
 
-                // Right frame post
-                const rightFramePost = new THREE.Mesh(doorFrameGeometry, doorFrameMaterial);
-                rightFramePost.position.set(2.95, 4, checkpoint.z);
-                rightDoorGroup.add(rightFramePost);
+                // Front wall (end of corridor)
+                const leftBranchFrontTex = branchTextTexture.clone();
+                branchCorridorMaterials.push(new THREE.MeshStandardMaterial({
+                    map: leftBranchFrontTex,
+                    side: THREE.BackSide,
+                    emissive: 0x555555,
+                    emissiveMap: leftBranchFrontTex,
+                    emissiveIntensity: 0.8
+                }));
 
-                // Top frame
-                const rightTopFrame = new THREE.Mesh(topFrameGeometry, doorFrameMaterial);
-                rightTopFrame.position.set(4.45, 4, checkpoint.z);
-                rightTopFrame.rotation.y = Math.PI / 2;
-                rightDoorGroup.add(rightTopFrame);
+                // Back wall (opening - make it transparent)
+                branchCorridorMaterials.push(new THREE.MeshStandardMaterial({
+                    transparent: true,
+                    opacity: 0,
+                    side: THREE.BackSide
+                }));
 
-                // Dark passage interior
-                const rightPassage = new THREE.Mesh(passageGeometry, passageMaterial);
-                rightPassage.position.set(2.95, 4, checkpoint.z);
-                rightPassage.rotation.y = -Math.PI / 2;
-                rightDoorGroup.add(rightPassage);
+                const leftBranchGeometry = new THREE.BoxGeometry(15, 10, 3);
+                const leftBranchCorridor = new THREE.Mesh(leftBranchGeometry, branchCorridorMaterials);
+                leftBranchCorridor.position.set(-10.5, 0, checkpoint.z); // Position to the left
+                leftBranchGroup.add(leftBranchCorridor);
 
-                scene.add(rightDoorGroup);
-                checkpoint.rightDoor = rightDoorGroup;
+                scene.add(leftBranchGroup);
+                checkpoint.leftDoor = leftBranchGroup;
+
+                // Create RIGHT branch corridor (extends to the right from main corridor)
+                const rightBranchGroup = new THREE.Group();
+
+                const rightBranchMaterials = [];
+
+                // Create textures for right branch
+                const rightBranchRightTex = branchTextTexture.clone();
+                rightBranchRightTex.wrapS = THREE.RepeatWrapping;
+                rightBranchRightTex.wrapT = THREE.RepeatWrapping;
+                rightBranchRightTex.repeat.set(15, 2);
+                rightBranchRightTex.needsUpdate = true;
+                rightBranchMaterials.push(new THREE.MeshStandardMaterial({
+                    map: rightBranchRightTex,
+                    side: THREE.BackSide,
+                    emissive: 0x555555,
+                    emissiveMap: rightBranchRightTex,
+                    emissiveIntensity: 0.8
+                }));
+
+                const rightBranchLeftTex = branchTextTexture.clone();
+                rightBranchLeftTex.wrapS = THREE.RepeatWrapping;
+                rightBranchLeftTex.wrapT = THREE.RepeatWrapping;
+                rightBranchLeftTex.repeat.set(15, 2);
+                rightBranchLeftTex.needsUpdate = true;
+                rightBranchMaterials.push(new THREE.MeshStandardMaterial({
+                    map: rightBranchLeftTex,
+                    side: THREE.BackSide,
+                    emissive: 0x555555,
+                    emissiveMap: rightBranchLeftTex,
+                    emissiveIntensity: 0.8
+                }));
+
+                const rightBranchTopTex = branchTextTexture.clone();
+                rightBranchTopTex.wrapS = THREE.RepeatWrapping;
+                rightBranchTopTex.wrapT = THREE.RepeatWrapping;
+                rightBranchTopTex.repeat.set(1, 15);
+                rightBranchTopTex.needsUpdate = true;
+                rightBranchMaterials.push(new THREE.MeshStandardMaterial({
+                    map: rightBranchTopTex,
+                    side: THREE.BackSide,
+                    emissive: 0x555555,
+                    emissiveMap: rightBranchTopTex,
+                    emissiveIntensity: 0.8
+                }));
+
+                const rightBranchBottomTex = branchTextTexture.clone();
+                rightBranchBottomTex.wrapS = THREE.RepeatWrapping;
+                rightBranchBottomTex.wrapT = THREE.RepeatWrapping;
+                rightBranchBottomTex.repeat.set(1, 15);
+                rightBranchBottomTex.needsUpdate = true;
+                rightBranchMaterials.push(new THREE.MeshStandardMaterial({
+                    map: rightBranchBottomTex,
+                    side: THREE.BackSide,
+                    emissive: 0x555555,
+                    emissiveMap: rightBranchBottomTex,
+                    emissiveIntensity: 0.8
+                }));
+
+                const rightBranchFrontTex = branchTextTexture.clone();
+                rightBranchMaterials.push(new THREE.MeshStandardMaterial({
+                    map: rightBranchFrontTex,
+                    side: THREE.BackSide,
+                    emissive: 0x555555,
+                    emissiveMap: rightBranchFrontTex,
+                    emissiveIntensity: 0.8
+                }));
+
+                // Back wall (opening - transparent)
+                rightBranchMaterials.push(new THREE.MeshStandardMaterial({
+                    transparent: true,
+                    opacity: 0,
+                    side: THREE.BackSide
+                }));
+
+                const rightBranchGeometry = new THREE.BoxGeometry(15, 10, 3);
+                const rightBranchCorridor = new THREE.Mesh(rightBranchGeometry, rightBranchMaterials);
+                rightBranchCorridor.position.set(10.5, 0, checkpoint.z); // Position to the right
+                rightBranchGroup.add(rightBranchCorridor);
+
+                scene.add(rightBranchGroup);
+                checkpoint.rightDoor = rightBranchGroup;
 
                 // Create blocking walls (initially invisible, will appear for wrong choices)
                 const blockWallGeometry = new THREE.PlaneGeometry(3, 8);
