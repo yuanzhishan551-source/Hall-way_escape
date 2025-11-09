@@ -1,30 +1,20 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Corridor Flashlight - 3D First Person</title>
-    <!-- Version: 2.0 - Enhanced Monster Count & BUG Invasion System -->
+    <title>Corridor Flashlight Escape</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
-            font-family: 'Courier New', monospace;
-            background: #000;
+            margin: 0;
             overflow: hidden;
+            background: #000;
+            font-family: 'Courier New', monospace;
         }
-
         #canvas-container {
             width: 100vw;
             height: 100vh;
-            position: relative;
         }
-
-        /* UI Overlay */
         #ui-overlay {
             position: absolute;
             top: 20px;
@@ -34,24 +24,10 @@
             z-index: 100;
             text-shadow: 0 0 10px #00ff00;
             pointer-events: none;
-            font-family: monospace;
             background: rgba(0, 0, 0, 0.7);
             padding: 15px;
             border: 2px solid #00ff00;
         }
-
-        #mode-indicator {
-            font-size: 20px;
-            margin-bottom: 10px;
-        }
-
-        #instructions {
-            font-size: 12px;
-            opacity: 0.8;
-            line-height: 1.5;
-        }
-
-        /* Crosshair */
         #crosshair {
             position: absolute;
             top: 50%;
@@ -62,287 +38,206 @@
             pointer-events: none;
             z-index: 50;
         }
-
         #crosshair::before,
         #crosshair::after {
             content: '';
             position: absolute;
             background: rgba(255, 255, 255, 0.7);
         }
-
         #crosshair::before {
             width: 2px;
             height: 100%;
             left: 50%;
             transform: translateX(-50%);
         }
-
         #crosshair::after {
             width: 100%;
             height: 2px;
             top: 50%;
             transform: translateY(-50%);
         }
-
-
-        /* BUG Invasion overlay - random scattered bugs */
-        #bug-invasion {
+        #loading {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 60;
-            font-family: monospace;
-            color: #ff0000;
-            font-weight: bold;
-            overflow: hidden;
-        }
-
-        .bug-text {
-            position: absolute;
-            text-shadow: 0 0 8px #ff0000, 0 0 12px #ff0000;
-            opacity: 0.95;
-            white-space: nowrap;
-            animation: bugGlitch 0.3s infinite;
-        }
-
-        @keyframes bugGlitch {
-            0%, 100% {
-                text-shadow: 0 0 8px #ff0000, 0 0 12px #ff0000;
-                opacity: 0.95;
-            }
-            50% {
-                text-shadow: 2px 2px 8px #ff0000, -2px -2px 12px #ff0000;
-                opacity: 0.85;
-            }
-        }
-
-        /* Hit flash effect */
-        #hit-flash {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 0, 0, 0);
-            pointer-events: none;
-            z-index: 70;
-            transition: background 0.1s;
-        }
-
-        .flash-hit {
-            background: rgba(255, 0, 0, 0.5) !important;
-        }
-
-        /* Game Over screen */
-        #game-over {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.95);
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 300;
-            color: #ff0000;
-            font-size: 48px;
-            text-shadow: 0 0 30px #ff0000;
-        }
-
-        #game-over.show {
-            display: flex;
-        }
-
-        #game-over-text {
-            animation: glitch 0.5s infinite;
-        }
-
-        @keyframes glitch {
-            0%, 100% { transform: translate(0); }
-            20% { transform: translate(-5px, 5px); }
-            40% { transform: translate(5px, -5px); }
-            60% { transform: translate(-5px, -5px); }
-            80% { transform: translate(5px, 5px); }
-        }
-
-        .restart-btn {
-            margin-top: 30px;
-            font-size: 20px;
-            padding: 15px 30px;
-            background: #ff0000;
-            color: #000;
-            border: none;
-            cursor: pointer;
-            font-family: monospace;
-            font-weight: bold;
-        }
-
-        .restart-btn:hover {
-            background: #ff3333;
-        }
-
-        /* Escape Success screen */
-        #escape-screen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.95);
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 300;
-            color: #00ff00;
-            font-size: 48px;
-            text-shadow: 0 0 30px #00ff00;
-        }
-
-        #escape-screen.show {
-            display: flex;
-        }
-
-        #escape-text {
-            animation: fadeIn 2s ease-in;
-        }
-
-        @keyframes fadeIn {
-            0% { opacity: 0; transform: scale(0.8); }
-            100% { opacity: 1; transform: scale(1); }
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 24px;
+            z-index: 200;
         }
     </style>
 </head>
 <body>
-    <div id="canvas-container"></div>
-
-    <!-- Hit Flash Effect -->
-    <div id="hit-flash"></div>
-
-    <!-- BUG Invasion Overlay -->
-    <div id="bug-invasion"></div>
-
-    <!-- Game Over Screen -->
-    <div id="game-over">
-        <div id="game-over-text">SYSTEM CORRUPTED</div>
-        <div style="font-size: 24px; margin-top: 20px;">BUG OVERFLOW</div>
-        <button class="restart-btn" onclick="location.reload()">RESTART</button>
-    </div>
-
-    <!-- Escape Success Screen -->
-    <div id="escape-screen">
-        <div id="escape-text">ESCAPED</div>
-        <div style="font-size: 24px; margin-top: 20px;">You found the EXIT</div>
-        <button class="restart-btn" style="background: #00ff00; color: #000;" onclick="location.reload()">PLAY AGAIN</button>
-    </div>
-
-    <!-- Crosshair -->
+    <div id="loading">Loading...</div>
     <div id="crosshair"></div>
-
-    <!-- UI Overlay -->
     <div id="ui-overlay">
-        <div id="mode-indicator">MODE: WIDE BEAM</div>
         <div id="instructions">
             WASD: Move<br>
             MOUSE: Look Around<br>
             CLICK: Switch Mode<br>
             ESC: Unlock Mouse
         </div>
+        <div id="mode-indicator" style="margin-top: 15px; font-size: 18px; font-weight: bold; color: #ff8800;">
+            MODE: WIDE BEAM
+        </div>
     </div>
+    <div id="canvas-container"></div>
 
-    <!-- Three.js from CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-
     <script>
-        // ===========================
-        // GLOBAL STATE
-        // ===========================
-        const state = {
-            currentMode: 0,
-            isLocked: false,
-            monsters: [],
-            moveForward: false,
-            moveBackward: false,
-            moveLeft: false,
-            moveRight: false,
-            velocity: new THREE.Vector3(),
-            direction: new THREE.Vector3(),
-            audioContext: null,
-            hitCount: 0,
-            maxHits: 10,
-            isGameOver: false,
-            escaped: false,
-            lastHitTime: 0,
-            invulnerableTime: 1.0 // 1 second invulnerability after hit
-        };
-
-        // Mode configurations
-        const modes = [
-            {
-                name: 'WIDE BEAM',
-                color: 0xff8800,
-                colorHex: '#ff8800',
-                intensity: 2.5,
-                distance: 25,
-                angle: Math.PI / 4,
-                penumbra: 0.5
-            },
-            {
-                name: 'DETECTION',
-                color: 0x00ff00,
-                colorHex: '#00ff00',
-                intensity: 1.8,
-                distance: 30,
-                angle: Math.PI / 6,
-                penumbra: 0.4
-            }
-        ];
-
-        // ===========================
-        // SCENE SETUP
-        // ===========================
-        let scene, camera, renderer, spotlight, flashlightGroup;
-        let corridor, monsters = [];
-        let clock = new THREE.Clock();
+        window.addEventListener('load', function() {
+            init();
+        });
 
         function init() {
             // Scene
-            scene = new THREE.Scene();
-            scene.fog = new THREE.Fog(0x0a0a0a, 1, 50);
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x000000);
+            scene.fog = new THREE.Fog(0x000000, 10, 50);
 
-            // Camera
-            camera = new THREE.PerspectiveCamera(
+            // Camera (first person)
+            const camera = new THREE.PerspectiveCamera(
                 75,
                 window.innerWidth / window.innerHeight,
                 0.1,
                 1000
             );
-            camera.position.set(0, 1.6, 0); // Eye level height
+            camera.position.set(0, 1.6, 0); // Eye level
 
             // Renderer
-            renderer = new THREE.WebGLRenderer({ antialias: false }); // No antialiasing for pixelated look
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(window.devicePixelRatio * 0.7); // Lower pixel ratio for pixelated effect
+            renderer.setPixelRatio(window.devicePixelRatio);
             renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.BasicShadowMap; // Pixelated shadows
             document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-            // Ambient light (very dark)
-            const ambientLight = new THREE.AmbientLight(0x1a1a2e, 0.1);
-            scene.add(ambientLight);
+            document.getElementById('loading').style.display = 'none';
 
-            // Create flashlight group (moves with camera)
-            flashlightGroup = new THREE.Group();
+            // Create text texture (from reference code)
+            function createTextTexture(text, width = 2048, height = 2048) {
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(0, 0, width, height);
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 28px Courier New';
+
+                const words = text.split(' ');
+                let y = 40;
+                let x = 20;
+
+                while (y < height - 40) {
+                    const word = words[Math.floor(Math.random() * words.length)];
+                    const metrics = ctx.measureText(word);
+
+                    if (x + metrics.width > width - 40) {
+                        x = 20;
+                        y += 50;
+                    }
+
+                    ctx.fillText(word, x, y);
+                    x += metrics.width + 25;
+                }
+
+                const texture = new THREE.CanvasTexture(canvas);
+                texture.needsUpdate = true;
+                return texture;
+            }
+
+            // Sample text with warnings
+            const wallText = `RUN ESCAPE DANGER GET OUT FLEE WARNING EXIT HURRY # | / \\ - + = * : . X H M W N data information technology digital world artificial intelligence machine learning algorithm code programming software development`;
+
+            // Create corridor with proper texture repeat for each face
+            const textTexture = createTextTexture(wallText);
+
+            // Create separate materials for each face with proper repeat
+            const materials = [];
+
+            // Right wall (long wall: 500 length x 4 height)
+            const rightTexture = textTexture.clone();
+            rightTexture.wrapS = THREE.RepeatWrapping;
+            rightTexture.wrapT = THREE.RepeatWrapping;
+            rightTexture.repeat.set(40, 1); // Repeat 40 times horizontally for 500m length
+            rightTexture.needsUpdate = true;
+            materials.push(new THREE.MeshStandardMaterial({ map: rightTexture, side: THREE.BackSide }));
+
+            // Left wall (long wall: 500 length x 4 height)
+            const leftTexture = textTexture.clone();
+            leftTexture.wrapS = THREE.RepeatWrapping;
+            leftTexture.wrapT = THREE.RepeatWrapping;
+            leftTexture.repeat.set(40, 1);
+            leftTexture.needsUpdate = true;
+            materials.push(new THREE.MeshStandardMaterial({ map: leftTexture, side: THREE.BackSide }));
+
+            // Top (long: 500 length x 6 width)
+            const topTexture = textTexture.clone();
+            topTexture.wrapS = THREE.RepeatWrapping;
+            topTexture.wrapT = THREE.RepeatWrapping;
+            topTexture.repeat.set(40, 1);
+            topTexture.needsUpdate = true;
+            materials.push(new THREE.MeshStandardMaterial({ map: topTexture, side: THREE.BackSide }));
+
+            // Bottom (long: 500 length x 6 width)
+            const bottomTexture = textTexture.clone();
+            bottomTexture.wrapS = THREE.RepeatWrapping;
+            bottomTexture.wrapT = THREE.RepeatWrapping;
+            bottomTexture.repeat.set(40, 1);
+            bottomTexture.needsUpdate = true;
+            materials.push(new THREE.MeshStandardMaterial({ map: bottomTexture, side: THREE.BackSide }));
+
+            // Front wall (6 width x 4 height - normal)
+            const frontTexture = textTexture.clone();
+            frontTexture.wrapS = THREE.RepeatWrapping;
+            frontTexture.wrapT = THREE.RepeatWrapping;
+            frontTexture.repeat.set(1, 1);
+            frontTexture.needsUpdate = true;
+            materials.push(new THREE.MeshStandardMaterial({ map: frontTexture, side: THREE.BackSide }));
+
+            // Back wall (6 width x 4 height - normal)
+            const backTexture = textTexture.clone();
+            backTexture.wrapS = THREE.RepeatWrapping;
+            backTexture.wrapT = THREE.RepeatWrapping;
+            backTexture.repeat.set(1, 1);
+            backTexture.needsUpdate = true;
+            materials.push(new THREE.MeshStandardMaterial({ map: backTexture, side: THREE.BackSide }));
+
+            // Long corridor box (6 width, 4 height, 500 length)
+            const corridorGeometry = new THREE.BoxGeometry(6, 4, 500);
+            const corridor = new THREE.Mesh(corridorGeometry, materials);
+            scene.add(corridor);
+
+            // Flashlight setup
+            const flashlightGroup = new THREE.Group();
             camera.add(flashlightGroup);
             scene.add(camera);
 
-            // Spotlight (flashlight)
-            spotlight = new THREE.SpotLight(
+            const modes = [
+                {
+                    name: 'WIDE BEAM',
+                    color: 0xff8800,
+                    colorHex: '#ff8800',
+                    intensity: 2.5,
+                    distance: 25,
+                    angle: Math.PI / 4,
+                    penumbra: 0.5
+                },
+                {
+                    name: 'DETECTION',
+                    color: 0x00ff00,
+                    colorHex: '#00ff00',
+                    intensity: 1.8,
+                    distance: 30,
+                    angle: Math.PI / 6,
+                    penumbra: 0.4
+                }
+            ];
+
+            let currentMode = 0;
+            const spotlight = new THREE.SpotLight(
                 modes[0].color,
                 modes[0].intensity,
                 modes[0].distance,
@@ -352,411 +247,113 @@
             spotlight.position.set(0, -0.2, -0.5);
             spotlight.target.position.set(0, -0.2, -5);
             spotlight.castShadow = true;
-            spotlight.shadow.mapSize.width = 512; // Lower resolution for pixelated shadows
-            spotlight.shadow.mapSize.height = 512;
 
             flashlightGroup.add(spotlight);
             flashlightGroup.add(spotlight.target);
 
-            // Initialize audio
-            initAudio();
+            // Ambient light (very dark)
+            const ambientLight = new THREE.AmbientLight(0x000000, 0.05);
+            scene.add(ambientLight);
 
-            // Create corridor
-            createCorridor();
+            // Monster system
+            const monsters = [];
 
-            // Create initial monsters
-            createMonster();
-            createMonster();
-            createMonster();
-            setInterval(() => {
-                if (monsters.length < 25) { // Increased from 10 to 25
-                    createMonster();
-                }
-            }, 1500); // Faster spawn: 4000ms -> 1500ms
+            function createMonster() {
+                const monsterGroup = new THREE.Group();
+                const monsterType = Math.random() > 0.6 ? 'green' : 'red';
+                const baseColor = monsterType === 'red' ? '#ff0000' : '#00ff00';
 
-            // Setup controls
-            setupControls();
+                const fragmentCount = Math.floor(Math.random() * 21) + 40;
 
-            // Handle window resize
-            window.addEventListener('resize', onWindowResize, false);
+                for (let i = 0; i < fragmentCount; i++) {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 256;
+                    canvas.height = 64;
+                    const ctx = canvas.getContext('2d');
 
-            // Start animation loop
-            animate();
-        }
+                    const alpha = 0.6 + Math.random() * 0.4;
+                    ctx.fillStyle = baseColor;
+                    ctx.font = `bold ${32 + Math.floor(Math.random() * 24)}px monospace`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
 
-        // ===========================
-        // CREATE 3D CORRIDOR
-        // ===========================
-        function createCorridor() {
-            corridor = new THREE.Group();
+                    ctx.shadowBlur = 15 + Math.random() * 10;
+                    ctx.shadowColor = baseColor;
+                    ctx.fillText('BUG', canvas.width / 2, canvas.height / 2);
 
-            // Generate pixel textures
-            const wallTexture = generatePixelWallTexture();
-            const floorTexture = generatePixelFloorTexture();
-            const ceilingTexture = generatePixelCeilingTexture();
+                    const texture = new THREE.CanvasTexture(canvas);
+                    texture.magFilter = THREE.NearestFilter;
+                    texture.minFilter = THREE.NearestFilter;
 
-            // Corridor dimensions (5x longer)
-            const corridorLength = 500;
-            const corridorWidth = 6;
-            const corridorHeight = 4;
+                    const spriteMaterial = new THREE.SpriteMaterial({
+                        map: texture,
+                        transparent: true,
+                        opacity: monsterType === 'green' ? 0.2 : alpha
+                    });
 
-            // Floor
-            const floorGeometry = new THREE.PlaneGeometry(corridorWidth, corridorLength);
-            const floorMaterial = new THREE.MeshStandardMaterial({
-                map: floorTexture,
-                roughness: 0.9,
-                metalness: 0.1
-            });
-            const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-            floor.rotation.x = -Math.PI / 2;
-            floor.position.y = 0;
-            floor.receiveShadow = true;
-            corridor.add(floor);
+                    const sprite = new THREE.Sprite(spriteMaterial);
 
-            // Ceiling
-            const ceilingGeometry = new THREE.PlaneGeometry(corridorWidth, corridorLength);
-            const ceilingMaterial = new THREE.MeshStandardMaterial({
-                map: ceilingTexture,
-                roughness: 0.9,
-                metalness: 0.1
-            });
-            const ceiling = new THREE.Mesh(ceilingGeometry, ceilingMaterial);
-            ceiling.rotation.x = Math.PI / 2;
-            ceiling.position.y = corridorHeight;
-            ceiling.receiveShadow = true;
-            corridor.add(ceiling);
+                    sprite.position.set(
+                        (Math.random() - 0.5) * 1,
+                        (Math.random() - 0.5) * 1,
+                        (Math.random() - 0.5) * 1
+                    );
 
-            // Left wall
-            const wallGeometry = new THREE.PlaneGeometry(corridorLength, corridorHeight);
-            const wallMaterial = new THREE.MeshStandardMaterial({
-                map: wallTexture,
-                roughness: 0.9,
-                metalness: 0.1
-            });
-            const leftWall = new THREE.Mesh(wallGeometry, wallMaterial);
-            leftWall.rotation.y = Math.PI / 2;
-            leftWall.position.x = -corridorWidth / 2;
-            leftWall.position.y = corridorHeight / 2;
-            leftWall.receiveShadow = true;
-            corridor.add(leftWall);
+                    const scale = 0.8 + Math.random() * 0.6;
+                    sprite.scale.set(scale * 1.5, scale * 0.4, 1);
 
-            // Right wall
-            const rightWall = new THREE.Mesh(wallGeometry, wallMaterial.clone());
-            rightWall.rotation.y = -Math.PI / 2;
-            rightWall.position.x = corridorWidth / 2;
-            rightWall.position.y = corridorHeight / 2;
-            rightWall.receiveShadow = true;
-            corridor.add(rightWall);
+                    sprite.userData = {
+                        floatOffset: Math.random() * Math.PI * 2,
+                        floatSpeed: 0.5 + Math.random() * 0.5
+                    };
 
-            // Add exit door at corridor end
-            createExitDoor(corridor, corridorLength, corridorWidth, corridorHeight);
-
-            scene.add(corridor);
-        }
-
-        // Generate wall texture with text
-        function generatePixelWallTexture() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 2048;
-            canvas.height = 2048;
-            const ctx = canvas.getContext('2d');
-
-            ctx.fillStyle = '#000000';
-            ctx.fillRect(0, 0, 2048, 2048);
-
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 28px Courier New';
-
-            const wallText = 'RUN ESCAPE DANGER # | / \\ - + = * : . X H M W N GET OUT FLEE WARNING EXIT HURRY RUN ESCAPE DANGER # | / \\ - + = * : . X H M W N GET OUT FLEE WARNING EXIT HURRY RUN ESCAPE DANGER # | / \\ - + = * : . X H M W N GET OUT FLEE WARNING EXIT HURRY';
-            const words = wallText.split(' ');
-
-            let y = 40;
-            let x = 20;
-            while (y < 2008) {
-                const word = words[Math.floor(Math.random() * words.length)];
-                const metrics = ctx.measureText(word);
-
-                if (x + metrics.width > 2008) {
-                    x = 20;
-                    y += 50;
+                    monsterGroup.add(sprite);
                 }
 
-                ctx.fillText(word, x, y);
-                x += metrics.width + 25;
-            }
-
-            const texture = new THREE.CanvasTexture(canvas);
-            texture.wrapS = THREE.RepeatWrapping;
-            texture.wrapT = THREE.RepeatWrapping;
-            texture.repeat.set(2, 1); // Reduced from 4,4 to make text larger
-            texture.needsUpdate = true;
-            return texture;
-        }
-
-        function generatePixelFloorTexture() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 2048;
-            canvas.height = 2048;
-            const ctx = canvas.getContext('2d');
-
-            ctx.fillStyle = '#000000';
-            ctx.fillRect(0, 0, 2048, 2048);
-
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 28px Courier New';
-
-            const floorText = '. _ - ~ : , . _ - ~ : , . _ - ~ : , . _ - ~ : ,';
-            const words = floorText.split(' ');
-
-            let y = 40;
-            let x = 20;
-
-            while (y < 2008) {
-                const word = words[Math.floor(Math.random() * words.length)];
-                const metrics = ctx.measureText(word);
-
-                if (x + metrics.width > 2008) {
-                    x = 20;
-                    y += 50;
-                }
-
-                if (Math.random() > 0.7) {
-                    ctx.fillText(word, x, y);
-                }
-                x += metrics.width + 25;
-            }
-
-            const texture = new THREE.CanvasTexture(canvas);
-            texture.wrapS = THREE.RepeatWrapping;
-            texture.wrapT = THREE.RepeatWrapping;
-            texture.repeat.set(6, 6);
-            texture.needsUpdate = true;
-            return texture;
-        }
-
-        function generatePixelCeilingTexture() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 2048;
-            canvas.height = 2048;
-            const ctx = canvas.getContext('2d');
-
-            ctx.fillStyle = '#000000';
-            ctx.fillRect(0, 0, 2048, 2048);
-
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 28px Courier New';
-
-            const ceilingText = '- _ = ~ - _ = ~ - _ = ~ - _ = ~';
-            const words = ceilingText.split(' ');
-
-            let y = 40;
-            let x = 20;
-
-            while (y < 2008) {
-                const word = words[Math.floor(Math.random() * words.length)];
-                const metrics = ctx.measureText(word);
-
-                if (x + metrics.width > 2008) {
-                    x = 20;
-                    y += 50;
-                }
-
-                ctx.fillText(word, x, y);
-                x += metrics.width + 25;
-            }
-
-            const texture = new THREE.CanvasTexture(canvas);
-            texture.wrapS = THREE.RepeatWrapping;
-            texture.wrapT = THREE.RepeatWrapping;
-            texture.repeat.set(6, 6);
-            texture.needsUpdate = true;
-            return texture;
-        }
-
-        // ===========================
-        // CREATE EXIT DOOR
-        // ===========================
-        function createExitDoor(parent, length, width, height) {
-            const doorGroup = new THREE.Group();
-
-            // Door position at the end of corridor
-            const doorZ = -length / 2 + 0.5; // Slight offset from wall
-
-            // Door frame (black)
-            const doorGeometry = new THREE.BoxGeometry(2, 3, 0.2);
-            const doorMaterial = new THREE.MeshStandardMaterial({
-                color: 0x0a0a0a,
-                roughness: 0.8,
-                metalness: 0.2
-            });
-            const door = new THREE.Mesh(doorGeometry, doorMaterial);
-            door.position.set(0, 1.5, doorZ);
-            door.receiveShadow = true;
-            door.castShadow = true;
-            doorGroup.add(door);
-
-            // Door handle (darker gray)
-            const handleGeometry = new THREE.BoxGeometry(0.3, 0.1, 0.1);
-            const handleMaterial = new THREE.MeshStandardMaterial({
-                color: 0x333333,
-                roughness: 0.5,
-                metalness: 0.5
-            });
-            const handle = new THREE.Mesh(handleGeometry, handleMaterial);
-            handle.position.set(0.7, 1.5, doorZ + 0.15);
-            doorGroup.add(handle);
-
-            // EXIT sign (green glowing)
-            const signCanvas = document.createElement('canvas');
-            signCanvas.width = 256;
-            signCanvas.height = 128;
-            const ctx = signCanvas.getContext('2d');
-
-            // Green background
-            ctx.fillStyle = '#00aa00';
-            ctx.fillRect(0, 0, signCanvas.width, signCanvas.height);
-
-            // White border
-            ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = 4;
-            ctx.strokeRect(5, 5, signCanvas.width - 10, signCanvas.height - 10);
-
-            // EXIT text
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 72px monospace';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('EXIT', signCanvas.width / 2, signCanvas.height / 2);
-
-            // Running man icon (simple representation)
-            ctx.fillStyle = '#ffffff';
-            ctx.beginPath();
-            ctx.arc(60, 64, 12, 0, Math.PI * 2); // Head
-            ctx.fill();
-            ctx.fillRect(55, 76, 10, 20); // Body
-            ctx.fillRect(50, 80, 5, 15); // Left leg
-            ctx.fillRect(65, 80, 5, 15); // Right leg
-
-            const signTexture = new THREE.CanvasTexture(signCanvas);
-            signTexture.magFilter = THREE.NearestFilter;
-            signTexture.minFilter = THREE.NearestFilter;
-
-            const signGeometry = new THREE.PlaneGeometry(1.5, 0.75);
-            const signMaterial = new THREE.MeshStandardMaterial({
-                map: signTexture,
-                emissive: 0x00ff00,
-                emissiveIntensity: 0.5
-            });
-            const sign = new THREE.Mesh(signGeometry, signMaterial);
-            sign.position.set(0, 3.3, doorZ + 0.1);
-            doorGroup.add(sign);
-
-            // Green light from sign
-            const signLight = new THREE.PointLight(0x00ff00, 0.5, 5);
-            signLight.position.set(0, 3.3, doorZ + 0.5);
-            doorGroup.add(signLight);
-
-            parent.add(doorGroup);
-        }
-
-        // ===========================
-        // CREATE TEXT MONSTERS (CLUSTERS)
-        // ===========================
-        function createMonster() {
-            const monsterTexts = ['BUG']; // Only use BUG
-
-            // Create a group for the monster cluster
-            const monsterCluster = new THREE.Group();
-
-            // Determine monster type
-            const monsterType = Math.random() > 0.6 ? 'green' : 'red';
-            const baseColor = monsterType === 'red' ? '#ff0000' : '#00ff00';
-
-            // Create 40-60 text fragments in a cluster (much denser)
-            const fragmentCount = Math.floor(Math.random() * 21) + 40; // 40-60 fragments
-
-            for (let i = 0; i < fragmentCount; i++) {
-                const text = monsterTexts[Math.floor(Math.random() * monsterTexts.length)];
-
-                // Create text sprite
-                const canvas = document.createElement('canvas');
-                canvas.width = 256;
-                canvas.height = 64;
-                const ctx = canvas.getContext('2d');
-
-                // Vary opacity and size for depth
-                const alpha = 0.6 + Math.random() * 0.4;
-                ctx.fillStyle = baseColor;
-                ctx.font = `bold ${32 + Math.floor(Math.random() * 24)}px monospace`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-
-                // Add glow
-                ctx.shadowBlur = 15 + Math.random() * 10;
-                ctx.shadowColor = baseColor;
-                ctx.fillText(text, canvas.width / 2, canvas.height / 2);
-
-                const texture = new THREE.CanvasTexture(canvas);
-                texture.magFilter = THREE.NearestFilter;
-                texture.minFilter = THREE.NearestFilter;
-
-                const spriteMaterial = new THREE.SpriteMaterial({
-                    map: texture,
-                    transparent: true,
-                    opacity: monsterType === 'green' ? 0.2 : alpha // Green monsters nearly invisible
-                });
-
-                const sprite = new THREE.Sprite(spriteMaterial);
-
-                // Random position within cluster (1x1x1 cube - much tighter)
-                sprite.position.set(
-                    (Math.random() - 0.5) * 1,
-                    (Math.random() - 0.5) * 1,
-                    (Math.random() - 0.5) * 1
+                monsterGroup.position.set(
+                    (Math.random() - 0.5) * 4,
+                    1.5 + Math.random() * 1,
+                    -50 - Math.random() * 400
                 );
 
-                // Random scale
-                const scale = 0.8 + Math.random() * 0.6;
-                sprite.scale.set(scale * 1.5, scale * 0.4, 1);
-
-                // Store individual fragment animation data
-                sprite.userData = {
-                    floatOffset: Math.random() * Math.PI * 2,
-                    floatSpeed: 0.5 + Math.random() * 0.5
+                monsterGroup.userData = {
+                    type: monsterType,
+                    baseOpacity: monsterType === 'green' ? 0.2 : 0.8,
+                    pulsePhase: Math.random() * Math.PI * 2,
+                    rotationSpeed: (Math.random() - 0.5) * 0.3,
+                    approachSpeed: 0.01 + Math.random() * 0.02,
+                    frozen: false,
+                    freezeTimer: 0,
+                    revealed: false,
+                    disintegrating: false
                 };
 
-                monsterCluster.add(sprite);
+                scene.add(monsterGroup);
+                monsters.push(monsterGroup);
             }
 
-            // Position cluster in corridor (far away from player in 500m corridor)
-            monsterCluster.position.set(
-                (Math.random() - 0.5) * 4,
-                1.5 + Math.random() * 1,
-                -50 - Math.random() * 400 // Start far away in long corridor
-            );
+            // Create initial monsters
+            for (let i = 0; i < 3; i++) {
+                createMonster();
+            }
 
-            // Store cluster data
-            monsterCluster.userData = {
-                type: monsterType,
-                baseOpacity: monsterType === 'green' ? 0.2 : 0.8,
-                pulsePhase: Math.random() * Math.PI * 2,
-                rotationSpeed: (Math.random() - 0.5) * 0.3,
-                approachSpeed: 0.01 + Math.random() * 0.02, // Speed towards player
-                frozen: false,
-                freezeTimer: 0,
-                revealed: false,
-                disintegrating: false
+            setInterval(() => {
+                if (monsters.length < 25) {
+                    createMonster();
+                }
+            }, 1500);
+
+            // Controls
+            const state = {
+                moveForward: false,
+                moveBackward: false,
+                moveLeft: false,
+                moveRight: false,
+                velocity: new THREE.Vector3(),
+                direction: new THREE.Vector3(),
+                isLocked: false
             };
 
-            scene.add(monsterCluster);
-            monsters.push(monsterCluster);
-        }
-
-        // ===========================
-        // CONTROLS
-        // ===========================
-        function setupControls() {
-            // Keyboard controls
             document.addEventListener('keydown', (e) => {
                 switch (e.code) {
                     case 'KeyW': state.moveForward = true; break;
@@ -775,7 +372,6 @@
                 }
             });
 
-            // Mouse look - request pointer lock on first click
             renderer.domElement.addEventListener('click', () => {
                 if (!state.isLocked) {
                     renderer.domElement.requestPointerLock();
@@ -795,541 +391,180 @@
                 camera.rotation.y -= movementX * 0.002;
                 camera.rotation.x -= movementY * 0.002;
 
-                // Clamp vertical rotation
                 camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x));
             });
 
             // Click to switch mode
             document.addEventListener('click', () => {
                 if (state.isLocked) {
-                    switchMode();
+                    currentMode = (currentMode + 1) % modes.length;
+                    const mode = modes[currentMode];
+
+                    spotlight.color.setHex(mode.color);
+                    spotlight.intensity = mode.intensity;
+                    spotlight.distance = mode.distance;
+                    spotlight.angle = mode.angle;
+                    spotlight.penumbra = mode.penumbra;
+
+                    document.getElementById('mode-indicator').textContent = `MODE: ${mode.name}`;
+                    document.getElementById('mode-indicator').style.color = mode.colorHex;
                 }
             });
-        }
 
-        // ===========================
-        // SWITCH FLASHLIGHT MODE
-        // ===========================
-        function switchMode() {
-            state.currentMode = (state.currentMode + 1) % modes.length;
-            const mode = modes[state.currentMode];
+            // Animation
+            const clock = new THREE.Clock();
 
-            spotlight.color.setHex(mode.color);
-            spotlight.intensity = mode.intensity;
-            spotlight.distance = mode.distance;
-            spotlight.angle = mode.angle;
-            spotlight.penumbra = mode.penumbra;
+            function checkFlashlightHit(monsterGroup) {
+                const monsterPos = new THREE.Vector3();
+                monsterPos.copy(monsterGroup.position);
 
-            document.getElementById('mode-indicator').textContent = `MODE: ${mode.name}`;
-            document.getElementById('mode-indicator').style.color = mode.colorHex;
+                const cameraToMonster = new THREE.Vector3();
+                cameraToMonster.subVectors(monsterPos, camera.position);
 
-            // Flicker effect
-            spotlight.intensity *= 1.5;
-            setTimeout(() => {
-                spotlight.intensity = mode.intensity;
-            }, 100);
-        }
+                const distance = cameraToMonster.length();
 
-        // ===========================
-        // UPDATE MOVEMENT
-        // ===========================
-        function updateMovement(delta) {
-            if (!state.isLocked || state.isGameOver) return;
+                const mode = modes[currentMode];
 
-            const speed = 5.0;
+                if (distance > mode.distance) return false;
 
-            state.velocity.x -= state.velocity.x * 10.0 * delta;
-            state.velocity.z -= state.velocity.z * 10.0 * delta;
+                const cameraDirection = new THREE.Vector3(0, 0, -1);
+                cameraDirection.applyQuaternion(camera.quaternion);
 
-            state.direction.z = Number(state.moveForward) - Number(state.moveBackward);
-            state.direction.x = Number(state.moveRight) - Number(state.moveLeft);
-            state.direction.normalize();
+                cameraToMonster.normalize();
+                const angle = Math.acos(cameraDirection.dot(cameraToMonster));
 
-            if (state.moveForward || state.moveBackward) {
-                state.velocity.z -= state.direction.z * speed * delta;
-            }
-            if (state.moveLeft || state.moveRight) {
-                state.velocity.x += state.direction.x * speed * delta; // Fixed: changed -= to +=
+                return angle < mode.angle;
             }
 
-            // Apply velocity
-            camera.position.x += state.velocity.x * Math.cos(camera.rotation.y) - state.velocity.z * Math.sin(camera.rotation.y);
-            camera.position.z += state.velocity.x * Math.sin(camera.rotation.y) + state.velocity.z * Math.cos(camera.rotation.y);
+            function animate() {
+                requestAnimationFrame(animate);
 
-            // Keep player in corridor bounds (500m corridor)
-            camera.position.x = Math.max(-2.5, Math.min(2.5, camera.position.x));
-            camera.position.z = Math.max(-252, Math.min(245, camera.position.z));
+                const delta = clock.getDelta();
+                const time = Date.now() * 0.001;
 
-            // Check if player reached exit door (escaped)
-            if (camera.position.z < -249) {
-                state.escaped = true;
-                showEscapeScreen();
-            }
-        }
+                // Movement
+                if (state.isLocked) {
+                    const speed = 5.0;
 
-        // ===========================
-        // UPDATE MONSTERS (CLUSTERS)
-        // ===========================
-        function updateMonsters(delta) {
-            const time = Date.now() * 0.001;
-            const currentMode = modes[state.currentMode];
+                    state.velocity.x -= state.velocity.x * 10.0 * delta;
+                    state.velocity.z -= state.velocity.z * 10.0 * delta;
 
-            for (let i = monsters.length - 1; i >= 0; i--) {
-                const monsterCluster = monsters[i];
-                const userData = monsterCluster.userData;
+                    state.direction.z = Number(state.moveForward) - Number(state.moveBackward);
+                    state.direction.x = Number(state.moveRight) - Number(state.moveLeft);
+                    state.direction.normalize();
 
-                // Check if monster is hit by flashlight
-                const isHitByFlashlight = checkFlashlightHit(monsterCluster);
-
-                // Handle freeze timer
-                if (userData.frozen && userData.freezeTimer > 0) {
-                    userData.freezeTimer -= delta;
-                    if (userData.freezeTimer <= 0) {
-                        userData.frozen = false;
+                    if (state.moveForward || state.moveBackward) {
+                        state.velocity.z -= state.direction.z * speed * delta;
                     }
+                    if (state.moveLeft || state.moveRight) {
+                        state.velocity.x += state.direction.x * speed * delta;
+                    }
+
+                    camera.position.x += state.velocity.x * Math.cos(camera.rotation.y) - state.velocity.z * Math.sin(camera.rotation.y);
+                    camera.position.z += state.velocity.x * Math.sin(camera.rotation.y) + state.velocity.z * Math.cos(camera.rotation.y);
+
+                    camera.position.x = Math.max(-2.5, Math.min(2.5, camera.position.x));
+                    camera.position.z = Math.max(-252, Math.min(245, camera.position.z));
                 }
 
-                // Apply flashlight effects based on mode
-                if (isHitByFlashlight) {
-                    // Mode 0: Wide Beam (Orange) - Freezes all monsters
-                    if (state.currentMode === 0) {
-                        if (!userData.frozen) {
-                            userData.frozen = true;
-                            userData.freezeTimer = 2.0; // Freeze for 2 seconds
-                            playStaticClick();
-                        }
+                // Update monsters with flashlight interaction
+                for (let i = monsters.length - 1; i >= 0; i--) {
+                    const monsterGroup = monsters[i];
+                    const userData = monsterGroup.userData;
+
+                    const isHit = checkFlashlightHit(monsterGroup);
+                    const mode = modes[currentMode];
+
+                    // Orange flashlight (WIDE BEAM) - Freezes red monsters
+                    if (isHit && mode.name === 'WIDE BEAM' && userData.type === 'red') {
+                        userData.frozen = true;
+                        userData.freezeTimer = 2.0; // Freeze for 2 seconds
                     }
 
-                    // Mode 1: Detection (Green) - Disintegrates green monsters
-                    else if (state.currentMode === 1 && userData.type === 'green') {
+                    // Green flashlight (DETECTION) - Reveals and disintegrates green monsters
+                    if (isHit && mode.name === 'DETECTION' && userData.type === 'green') {
+                        userData.revealed = true;
                         if (!userData.disintegrating) {
                             userData.disintegrating = true;
-                            userData.disintegrateTime = time;
-                            playDetectionNoise();
+                            userData.disintegrateTimer = 3.0; // Takes 3 seconds to destroy
                         }
                     }
-                }
 
-                // Handle disintegration
-                if (userData.disintegrating) {
-                    const disintegrateProgress = (time - userData.disintegrateTime) / 2.0; // 2 seconds to disintegrate
-                    if (disintegrateProgress >= 1.0) {
-                        // Remove completely disintegrated monster
-                        scene.remove(monsterCluster);
-                        monsters.splice(i, 1);
-                        continue;
-                    }
-
-                    // Fade out and break apart
-                    monsterCluster.children.forEach((sprite, index) => {
-                        sprite.material.opacity *= (1 - disintegrateProgress);
-                        sprite.position.y += disintegrateProgress * 0.1;
-                    });
-                }
-
-                // Move cluster slowly towards player (only if not frozen)
-                if (!userData.frozen && !userData.disintegrating) {
-                    const directionToPlayer = new THREE.Vector3();
-                    directionToPlayer.subVectors(camera.position, monsterCluster.position);
-                    directionToPlayer.y = 0; // Only move horizontally
-                    directionToPlayer.normalize();
-
-                    monsterCluster.position.x += directionToPlayer.x * userData.approachSpeed;
-                    monsterCluster.position.z += directionToPlayer.z * userData.approachSpeed;
-                }
-
-                // Slow rotation of entire cluster (slower when frozen)
-                const rotationSpeed = userData.frozen ? userData.rotationSpeed * 0.1 : userData.rotationSpeed;
-                monsterCluster.rotation.y += rotationSpeed * delta;
-
-                // Pulse opacity of entire cluster
-                const pulseFactor = Math.sin(time * 1.5 + userData.pulsePhase) * 0.2;
-
-                // Animate individual text fragments within cluster
-                monsterCluster.children.forEach((sprite, index) => {
-                    if (userData.disintegrating) return; // Skip normal animation if disintegrating
-
-                    // Individual floating motion
-                    sprite.position.y += Math.sin(time * sprite.userData.floatSpeed + sprite.userData.floatOffset) * 0.005;
-
-                    // Adjust opacity based on state
-                    let targetOpacity;
-                    if (userData.type === 'green') {
-                        // Green monsters: nearly invisible unless revealed
-                        targetOpacity = userData.revealed ? 0.8 : 0.1;
-                    } else {
-                        // Red monsters: visible, more visible when revealed
-                        targetOpacity = userData.revealed ? 1.0 : (userData.baseOpacity + pulseFactor);
-                    }
-
-                    // Apply freeze effect (orange tint)
+                    // Handle freeze timer
                     if (userData.frozen) {
-                        sprite.material.color.setHex(0xff8800); // Orange tint when frozen
-                    } else {
-                        sprite.material.color.setHex(0xffffff); // Normal color
+                        userData.freezeTimer -= delta;
+                        if (userData.freezeTimer <= 0) {
+                            userData.frozen = false;
+                        }
                     }
 
-                    sprite.material.opacity = targetOpacity + Math.sin(time * 2 + index) * 0.1;
+                    // Handle disintegration
+                    if (userData.disintegrating) {
+                        userData.disintegrateTimer -= delta;
 
-                    // Slight rotation for each fragment
-                    sprite.rotation.z = Math.sin(time * 0.5 + index) * 0.1;
-                });
+                        // Fade out and expand
+                        monsterGroup.children.forEach((sprite) => {
+                            sprite.material.opacity *= 0.97;
+                            sprite.scale.multiplyScalar(1.01);
+                        });
 
-                // Check if monster hits player
-                const distanceToPlayer = monsterCluster.position.distanceTo(camera.position);
-                if (distanceToPlayer < 2) {
-                    // Monster hit the player!
-                    const currentTime = Date.now() * 0.001;
-                    if (currentTime - state.lastHitTime > state.invulnerableTime) {
-                        playerHit();
-                        state.lastHitTime = currentTime;
+                        if (userData.disintegrateTimer <= 0) {
+                            scene.remove(monsterGroup);
+                            monsters.splice(i, 1);
+                            continue;
+                        }
                     }
-                    // Remove monster after hit
-                    scene.remove(monsterCluster);
-                    monsters.splice(i, 1);
-                    continue;
+
+                    // Move towards player (only if not frozen)
+                    if (!userData.frozen && !userData.disintegrating) {
+                        const directionToPlayer = new THREE.Vector3();
+                        directionToPlayer.subVectors(camera.position, monsterGroup.position);
+                        directionToPlayer.y = 0;
+                        directionToPlayer.normalize();
+
+                        monsterGroup.position.x += directionToPlayer.x * userData.approachSpeed;
+                        monsterGroup.position.z += directionToPlayer.z * userData.approachSpeed;
+                    }
+
+                    // Rotate
+                    monsterGroup.rotation.y += userData.rotationSpeed * delta;
+
+                    // Pulse effect
+                    const pulseFactor = Math.sin(time * 1.5 + userData.pulsePhase) * 0.2;
+
+                    // Animate sprites
+                    monsterGroup.children.forEach((sprite, index) => {
+                        sprite.position.y += Math.sin(time * sprite.userData.floatSpeed + sprite.userData.floatOffset) * 0.005;
+
+                        // Different opacity handling based on state
+                        if (userData.disintegrating) {
+                            // Already handled above
+                        } else if (userData.type === 'green' && userData.revealed) {
+                            sprite.material.opacity = 0.8 + pulseFactor + Math.sin(time * 2 + index) * 0.1;
+                        } else {
+                            sprite.material.opacity = userData.baseOpacity + pulseFactor + Math.sin(time * 2 + index) * 0.1;
+                        }
+                    });
+
+                    // Check collision with player
+                    const distanceToPlayer = monsterGroup.position.distanceTo(camera.position);
+                    if (distanceToPlayer < 1.5) {
+                        // Game over (monster reached player)
+                        console.log('Game Over! Monster reached you!');
+                    }
                 }
 
-                // Remove if too far
-                if (distanceToPlayer > 500) {
-                    scene.remove(monsterCluster);
-                    monsters.splice(i, 1);
-                }
-            }
-        }
-
-        // ===========================
-        // CHECK FLASHLIGHT HIT
-        // ===========================
-        function checkFlashlightHit(monsterCluster) {
-            // Get monster position relative to camera
-            const monsterPos = new THREE.Vector3();
-            monsterPos.copy(monsterCluster.position);
-
-            // Transform to camera space
-            const cameraToMonster = new THREE.Vector3();
-            cameraToMonster.subVectors(monsterPos, camera.position);
-
-            // Get distance
-            const distance = cameraToMonster.length();
-
-            // Get current mode settings
-            const mode = modes[state.currentMode];
-
-            // Check if within flashlight distance
-            if (distance > mode.distance) return false;
-
-            // Get direction camera is looking
-            const cameraDirection = new THREE.Vector3(0, 0, -1);
-            cameraDirection.applyQuaternion(camera.quaternion);
-
-            // Calculate angle between camera direction and monster direction
-            cameraToMonster.normalize();
-            const angle = Math.acos(cameraDirection.dot(cameraToMonster));
-
-            // Check if within spotlight cone angle
-            return angle < mode.angle;
-        }
-
-        // ===========================
-        // AUDIO FEEDBACK
-        // ===========================
-        function playStaticClick() {
-            // Simple click sound feedback
-            if (state.audioContext) {
-                const oscillator = state.audioContext.createOscillator();
-                const gainNode = state.audioContext.createGain();
-                oscillator.frequency.value = 800;
-                oscillator.type = 'square';
-                gainNode.gain.setValueAtTime(0.1, state.audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, state.audioContext.currentTime + 0.1);
-                oscillator.connect(gainNode);
-                gainNode.connect(state.audioContext.destination);
-                oscillator.start();
-                oscillator.stop(state.audioContext.currentTime + 0.1);
-            }
-        }
-
-        function playDetectionNoise() {
-            // Detection sound feedback
-            if (state.audioContext) {
-                const oscillator = state.audioContext.createOscillator();
-                const gainNode = state.audioContext.createGain();
-                oscillator.frequency.value = 1200;
-                oscillator.type = 'sine';
-                gainNode.gain.setValueAtTime(0.15, state.audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, state.audioContext.currentTime + 0.2);
-                oscillator.connect(gainNode);
-                gainNode.connect(state.audioContext.destination);
-                oscillator.start();
-                oscillator.stop(state.audioContext.currentTime + 0.2);
-            }
-        }
-
-        // Initialize audio context
-        function initAudio() {
-            try {
-                state.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            } catch (e) {
-                console.warn('Web Audio API not supported');
-            }
-        }
-
-        // ===========================
-        // PLAYER HIT & DAMAGE SYSTEM
-        // ===========================
-        function playerHit() {
-            if (state.isGameOver) return;
-
-            state.hitCount++;
-            console.log(`Hit! Count: ${state.hitCount}/${state.maxHits}`);
-
-            // Trigger hit effect
-            triggerHitEffect();
-
-            // Update BUG invasion UI
-            updateBugInvasion();
-
-            // Play hit sound
-            playHitSound();
-
-            // Check for game over
-            if (state.hitCount >= state.maxHits) {
-                triggerGameOver();
-            }
-        }
-
-        // Trigger visual hit effect
-        function triggerHitEffect() {
-            const hitFlash = document.getElementById('hit-flash');
-
-            // Flash red
-            hitFlash.classList.add('flash-hit');
-            setTimeout(() => {
-                hitFlash.classList.remove('flash-hit');
-            }, 200);
-
-            // Camera shake effect
-            const originalY = camera.rotation.y;
-            const originalX = camera.rotation.x;
-            const shakeAmount = 0.1;
-
-            // Quick shake
-            camera.rotation.x += (Math.random() - 0.5) * shakeAmount;
-            camera.rotation.y += (Math.random() - 0.5) * shakeAmount;
-
-            setTimeout(() => {
-                camera.rotation.x = originalX;
-                camera.rotation.y = originalY;
-            }, 100);
-        }
-
-        // Update BUG text invasion - random scattered all over edges
-        function updateBugInvasion() {
-            const container = document.getElementById('bug-invasion');
-
-            // Calculate how many BUGs to add (exponential growth)
-            // Hit 1: 15 bugs, Hit 2: 30 bugs, ..., Hit 10: 150 bugs total
-            const totalBugs = state.hitCount * 15;
-
-            // Remove existing bugs
-            container.innerHTML = '';
-
-            // Generate random BUG texts all over the screen edges
-            for (let i = 0; i < totalBugs; i++) {
-                const bugElement = document.createElement('div');
-                bugElement.className = 'bug-text';
-                bugElement.textContent = 'BUG';
-
-                // Random font size (10px - 30px)
-                const fontSize = 10 + Math.random() * 20;
-                bugElement.style.fontSize = fontSize + 'px';
-
-                // Random rotation (-30deg to 30deg)
-                const rotation = (Math.random() - 0.5) * 60;
-                bugElement.style.transform = `rotate(${rotation}deg)`;
-
-                // Decide which edge to place it on
-                const edge = Math.floor(Math.random() * 4); // 0=top, 1=right, 2=bottom, 3=left
-
-                // Progress factor: how far into the screen bugs should penetrate
-                // 0 at hit 0, 1.0 at hit 10
-                const penetration = (state.hitCount / state.maxHits);
-
-                let x, y;
-
-                if (edge === 0) {
-                    // Top edge
-                    x = Math.random() * 100; // 0-100%
-                    y = Math.random() * 40 * penetration; // Penetrate into screen
-                    bugElement.style.left = x + '%';
-                    bugElement.style.top = y + '%';
-                } else if (edge === 1) {
-                    // Right edge
-                    x = 100 - Math.random() * 40 * penetration;
-                    y = Math.random() * 100;
-                    bugElement.style.left = x + '%';
-                    bugElement.style.top = y + '%';
-                } else if (edge === 2) {
-                    // Bottom edge
-                    x = Math.random() * 100;
-                    y = 100 - Math.random() * 40 * penetration;
-                    bugElement.style.left = x + '%';
-                    bugElement.style.top = y + '%';
-                } else {
-                    // Left edge
-                    x = Math.random() * 40 * penetration;
-                    y = Math.random() * 100;
-                    bugElement.style.left = x + '%';
-                    bugElement.style.top = y + '%';
-                }
-
-                // Random animation delay for staggered glitch effect
-                bugElement.style.animationDelay = (Math.random() * 0.3) + 's';
-
-                container.appendChild(bugElement);
-            }
-        }
-
-        // Play hit sound
-        function playHitSound() {
-            if (!state.audioContext) return;
-
-            // Harsh alarm sound
-            const oscillator = state.audioContext.createOscillator();
-            const gainNode = state.audioContext.createGain();
-
-            oscillator.type = 'sawtooth';
-            oscillator.frequency.setValueAtTime(200, state.audioContext.currentTime);
-            oscillator.frequency.exponentialRampToValueAtTime(100, state.audioContext.currentTime + 0.3);
-
-            gainNode.gain.setValueAtTime(0.3, state.audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, state.audioContext.currentTime + 0.3);
-
-            oscillator.connect(gainNode);
-            gainNode.connect(state.audioContext.destination);
-
-            oscillator.start();
-            oscillator.stop(state.audioContext.currentTime + 0.3);
-        }
-
-        // Trigger game over
-        function triggerGameOver() {
-            state.isGameOver = true;
-
-            // Show game over screen
-            document.getElementById('game-over').classList.add('show');
-
-            // Release pointer lock
-            document.exitPointerLock();
-
-            // Play game over sound
-            playGameOverSound();
-        }
-
-        // Show escape success screen
-        function showEscapeScreen() {
-            if (state.isGameOver) return; // Don't override game over
-
-            console.log('🎉 ESCAPED - You found the EXIT!');
-
-            // Show escape success screen
-            document.getElementById('escape-screen').classList.add('show');
-
-            // Release pointer lock
-            document.exitPointerLock();
-
-            // Play success sound
-            playEscapeSound();
-        }
-
-        // Play game over sound
-        function playGameOverSound() {
-            if (!state.audioContext) return;
-
-            // Dramatic descending tone
-            const oscillator = state.audioContext.createOscillator();
-            const gainNode = state.audioContext.createGain();
-
-            oscillator.type = 'square';
-            oscillator.frequency.setValueAtTime(800, state.audioContext.currentTime);
-            oscillator.frequency.exponentialRampToValueAtTime(100, state.audioContext.currentTime + 1.5);
-
-            gainNode.gain.setValueAtTime(0.4, state.audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, state.audioContext.currentTime + 1.5);
-
-            oscillator.connect(gainNode);
-            gainNode.connect(state.audioContext.destination);
-
-            oscillator.start();
-            oscillator.stop(state.audioContext.currentTime + 1.5);
-        }
-
-        // Play escape success sound
-        function playEscapeSound() {
-            if (!state.audioContext) return;
-
-            // Triumphant ascending tone
-            const oscillator = state.audioContext.createOscillator();
-            const gainNode = state.audioContext.createGain();
-
-            oscillator.type = 'sine';
-            oscillator.frequency.setValueAtTime(200, state.audioContext.currentTime);
-            oscillator.frequency.exponentialRampToValueAtTime(800, state.audioContext.currentTime + 0.8);
-
-            gainNode.gain.setValueAtTime(0.3, state.audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, state.audioContext.currentTime + 0.8);
-
-            oscillator.connect(gainNode);
-            gainNode.connect(state.audioContext.destination);
-
-            oscillator.start();
-            oscillator.stop(state.audioContext.currentTime + 0.8);
-        }
-
-        // ===========================
-        // ANIMATION LOOP
-        // ===========================
-        function animate() {
-            requestAnimationFrame(animate);
-
-            const delta = clock.getDelta();
-
-            // Stop updates if game over or escaped
-            if (!state.isGameOver && !state.escaped) {
-                updateMovement(delta);
-                updateMonsters(delta);
+                renderer.render(scene, camera);
             }
 
-            // Random flicker
-            if (Math.random() > 0.995) {
-                const mode = modes[state.currentMode];
-                spotlight.intensity = mode.intensity * 0.7;
-                setTimeout(() => {
-                    spotlight.intensity = mode.intensity;
-                }, 100);
-            }
+            animate();
 
-            renderer.render(scene, camera);
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
         }
-
-        // ===========================
-        // WINDOW RESIZE
-        // ===========================
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-
-        // ===========================
-        // INITIALIZE
-        // ===========================
-        window.addEventListener('load', () => {
-            console.log('🔦 3D Corridor Flashlight Loading...');
-            init();
-            console.log('✅ 3D Scene Ready!');
-        });
     </script>
 </body>
 </html>
