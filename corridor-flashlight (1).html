@@ -434,19 +434,19 @@
             // Create separate materials for each face with proper repeat
             const materials = [];
 
-            // Right wall (long wall: 500 length x 4 height)
+            // Right wall (long wall: 500 length x 6 height)
             const rightTexture = textTexture.clone();
             rightTexture.wrapS = THREE.RepeatWrapping;
             rightTexture.wrapT = THREE.RepeatWrapping;
-            rightTexture.repeat.set(40, 1); // Repeat 40 times horizontally for 500m length
+            rightTexture.repeat.set(100, 2); // More repeats to prevent stretching
             rightTexture.needsUpdate = true;
             materials.push(new THREE.MeshStandardMaterial({ map: rightTexture, side: THREE.BackSide }));
 
-            // Left wall (long wall: 500 length x 4 height)
+            // Left wall (long wall: 500 length x 6 height)
             const leftTexture = textTexture.clone();
             leftTexture.wrapS = THREE.RepeatWrapping;
             leftTexture.wrapT = THREE.RepeatWrapping;
-            leftTexture.repeat.set(40, 1);
+            leftTexture.repeat.set(100, 2);
             leftTexture.needsUpdate = true;
             materials.push(new THREE.MeshStandardMaterial({ map: leftTexture, side: THREE.BackSide }));
 
@@ -454,7 +454,7 @@
             const topTexture = textTexture.clone();
             topTexture.wrapS = THREE.RepeatWrapping;
             topTexture.wrapT = THREE.RepeatWrapping;
-            topTexture.repeat.set(40, 1);
+            topTexture.repeat.set(100, 2);
             topTexture.needsUpdate = true;
             materials.push(new THREE.MeshStandardMaterial({ map: topTexture, side: THREE.BackSide }));
 
@@ -462,33 +462,33 @@
             const bottomTexture = textTexture.clone();
             bottomTexture.wrapS = THREE.RepeatWrapping;
             bottomTexture.wrapT = THREE.RepeatWrapping;
-            bottomTexture.repeat.set(40, 1);
+            bottomTexture.repeat.set(100, 2);
             bottomTexture.needsUpdate = true;
             materials.push(new THREE.MeshStandardMaterial({ map: bottomTexture, side: THREE.BackSide }));
 
-            // Front wall (6 width x 4 height - normal)
+            // Front wall (6 width x 6 height - normal)
             const frontTexture = textTexture.clone();
             frontTexture.wrapS = THREE.RepeatWrapping;
             frontTexture.wrapT = THREE.RepeatWrapping;
-            frontTexture.repeat.set(1, 1);
+            frontTexture.repeat.set(1.5, 1.5);
             frontTexture.needsUpdate = true;
             materials.push(new THREE.MeshStandardMaterial({ map: frontTexture, side: THREE.BackSide }));
 
-            // Back wall (6 width x 4 height - normal)
+            // Back wall (6 width x 6 height - normal)
             const backTexture = textTexture.clone();
             backTexture.wrapS = THREE.RepeatWrapping;
             backTexture.wrapT = THREE.RepeatWrapping;
-            backTexture.repeat.set(1, 1);
+            backTexture.repeat.set(1.5, 1.5);
             backTexture.needsUpdate = true;
             materials.push(new THREE.MeshStandardMaterial({ map: backTexture, side: THREE.BackSide }));
 
-            // Long corridor box (6 width, 4 height, 500 length)
-            const corridorGeometry = new THREE.BoxGeometry(6, 4, 500);
+            // Long corridor box (6 width, 6 height, 500 length) - Increased height
+            const corridorGeometry = new THREE.BoxGeometry(6, 6, 500);
             corridor = new THREE.Mesh(corridorGeometry, materials);
             scene.add(corridor);
 
             // Add exit door at corridor end
-            createExitDoor(500, 6, 4);
+            createExitDoor(500, 6, 6);
         }
 
         // ===========================
