@@ -74,7 +74,11 @@
         <div id="instructions">
             WASD: Move<br>
             MOUSE: Look Around<br>
+            CLICK: Switch Mode<br>
             ESC: Unlock Mouse
+        </div>
+        <div id="mode-indicator" style="margin-top: 15px; font-size: 18px; font-weight: bold; color: #ff8800;">
+            MODE: WIDE BEAM
         </div>
     </div>
     <div id="canvas-container"></div>
@@ -206,14 +210,50 @@
             const corridor = new THREE.Mesh(corridorGeometry, materials);
             scene.add(corridor);
 
-            // Ambient light (brighter for visibility)
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
-            scene.add(ambientLight);
+            // Flashlight setup
+            const flashlightGroup = new THREE.Group();
+            camera.add(flashlightGroup);
+            scene.add(camera);
 
-            // Add directional light for better text visibility
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-            directionalLight.position.set(0, 10, 0);
-            scene.add(directionalLight);
+            const modes = [
+                {
+                    name: 'WIDE BEAM',
+                    color: 0xff8800,
+                    colorHex: '#ff8800',
+                    intensity: 2.5,
+                    distance: 25,
+                    angle: Math.PI / 4,
+                    penumbra: 0.5
+                },
+                {
+                    name: 'DETECTION',
+                    color: 0x00ff00,
+                    colorHex: '#00ff00',
+                    intensity: 1.8,
+                    distance: 30,
+                    angle: Math.PI / 6,
+                    penumbra: 0.4
+                }
+            ];
+
+            let currentMode = 0;
+            const spotlight = new THREE.SpotLight(
+                modes[0].color,
+                modes[0].intensity,
+                modes[0].distance,
+                modes[0].angle,
+                modes[0].penumbra
+            );
+            spotlight.position.set(0, -0.2, -0.5);
+            spotlight.target.position.set(0, -0.2, -5);
+            spotlight.castShadow = true;
+
+            flashlightGroup.add(spotlight);
+            flashlightGroup.add(spotlight.target);
+
+            // Ambient light (very dark)
+            const ambientLight = new THREE.AmbientLight(0x000000, 0.05);
+            scene.add(ambientLight);
 
             // Monster system
             const monsters = [];
@@ -354,9 +394,47 @@
                 camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x));
             });
 
+            // Click to switch mode
+            document.addEventListener('click', () => {
+                if (state.isLocked) {
+                    currentMode = (currentMode + 1) % modes.length;
+                    const mode = modes[currentMode];
+
+                    spotlight.color.setHex(mode.color);
+                    spotlight.intensity = mode.intensity;
+                    spotlight.distance = mode.distance;
+                    spotlight.angle = mode.angle;
+                    spotlight.penumbra = mode.penumbra;
+
+                    document.getElementById('mode-indicator').textContent = `MODE: ${mode.name}`;
+                    document.getElementById('mode-indicator').style.color = mode.colorHex;
+                }
+            });
 
             // Animation
             const clock = new THREE.Clock();
+
+            function checkFlashlightHit(monsterGroup) {
+                const monsterPos = new THREE.Vector3();
+                monsterPos.copy(monsterGroup.position);
+
+                const cameraToMonster = new THREE.Vector3();
+                cameraToMonster.subVectors(monsterPos, camera.position);
+
+                const distance = cameraToMonster.length();
+
+                const mode = modes[currentMode];
+
+                if (distance > mode.distance) return false;
+
+                const cameraDirection = new THREE.Vector3(0, 0, -1);
+                cameraDirection.applyQuaternion(camera.quaternion);
+
+                cameraToMonster.normalize();
+                const angle = Math.acos(cameraDirection.dot(cameraToMonster));
+
+                return angle < mode.angle;
+            }
 
             function animate() {
                 requestAnimationFrame(animate);
@@ -389,31 +467,91 @@
                     camera.position.z = Math.max(-252, Math.min(245, camera.position.z));
                 }
 
-                // Update monsters (simplified - no flashlight interaction)
+                // Update monsters with flashlight interaction
                 for (let i = monsters.length - 1; i >= 0; i--) {
                     const monsterGroup = monsters[i];
                     const userData = monsterGroup.userData;
 
-                    // Move towards player
-                    const directionToPlayer = new THREE.Vector3();
-                    directionToPlayer.subVectors(camera.position, monsterGroup.position);
-                    directionToPlayer.y = 0;
-                    directionToPlayer.normalize();
+                    const isHit = checkFlashlightHit(monsterGroup);
+                    const mode = modes[currentMode];
 
-                    monsterGroup.position.x += directionToPlayer.x * userData.approachSpeed;
-                    monsterGroup.position.z += directionToPlayer.z * userData.approachSpeed;
+                    // Orange flashlight (WIDE BEAM) - Freezes red monsters
+                    if (isHit && mode.name === 'WIDE BEAM' && userData.type === 'red') {
+                        userData.frozen = true;
+                        userData.freezeTimer = 2.0; // Freeze for 2 seconds
+                    }
+
+                    // Green flashlight (DETECTION) - Reveals and disintegrates green monsters
+                    if (isHit && mode.name === 'DETECTION' && userData.type === 'green') {
+                        userData.revealed = true;
+                        if (!userData.disintegrating) {
+                            userData.disintegrating = true;
+                            userData.disintegrateTimer = 3.0; // Takes 3 seconds to destroy
+                        }
+                    }
+
+                    // Handle freeze timer
+                    if (userData.frozen) {
+                        userData.freezeTimer -= delta;
+                        if (userData.freezeTimer <= 0) {
+                            userData.frozen = false;
+                        }
+                    }
+
+                    // Handle disintegration
+                    if (userData.disintegrating) {
+                        userData.disintegrateTimer -= delta;
+
+                        // Fade out and expand
+                        monsterGroup.children.forEach((sprite) => {
+                            sprite.material.opacity *= 0.97;
+                            sprite.scale.multiplyScalar(1.01);
+                        });
+
+                        if (userData.disintegrateTimer <= 0) {
+                            scene.remove(monsterGroup);
+                            monsters.splice(i, 1);
+                            continue;
+                        }
+                    }
+
+                    // Move towards player (only if not frozen)
+                    if (!userData.frozen && !userData.disintegrating) {
+                        const directionToPlayer = new THREE.Vector3();
+                        directionToPlayer.subVectors(camera.position, monsterGroup.position);
+                        directionToPlayer.y = 0;
+                        directionToPlayer.normalize();
+
+                        monsterGroup.position.x += directionToPlayer.x * userData.approachSpeed;
+                        monsterGroup.position.z += directionToPlayer.z * userData.approachSpeed;
+                    }
 
                     // Rotate
                     monsterGroup.rotation.y += userData.rotationSpeed * delta;
 
-                    // Pulse
+                    // Pulse effect
                     const pulseFactor = Math.sin(time * 1.5 + userData.pulsePhase) * 0.2;
 
                     // Animate sprites
                     monsterGroup.children.forEach((sprite, index) => {
                         sprite.position.y += Math.sin(time * sprite.userData.floatSpeed + sprite.userData.floatOffset) * 0.005;
-                        sprite.material.opacity = userData.baseOpacity + pulseFactor + Math.sin(time * 2 + index) * 0.1;
+
+                        // Different opacity handling based on state
+                        if (userData.disintegrating) {
+                            // Already handled above
+                        } else if (userData.type === 'green' && userData.revealed) {
+                            sprite.material.opacity = 0.8 + pulseFactor + Math.sin(time * 2 + index) * 0.1;
+                        } else {
+                            sprite.material.opacity = userData.baseOpacity + pulseFactor + Math.sin(time * 2 + index) * 0.1;
+                        }
                     });
+
+                    // Check collision with player
+                    const distanceToPlayer = monsterGroup.position.distanceTo(camera.position);
+                    if (distanceToPlayer < 1.5) {
+                        // Game over (monster reached player)
+                        console.log('Game Over! Monster reached you!');
+                    }
                 }
 
                 renderer.render(scene, camera);
