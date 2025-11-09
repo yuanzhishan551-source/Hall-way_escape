@@ -464,9 +464,7 @@
             const topTexture = textTexture.clone();
             topTexture.wrapS = THREE.RepeatWrapping;
             topTexture.wrapT = THREE.RepeatWrapping;
-            topTexture.center.set(0.5, 0.5); // Set rotation center
-            topTexture.rotation = Math.PI / 2; // Rotate 90 degrees
-            topTexture.repeat.set(1, 40); // After rotation, this orients along corridor
+            topTexture.repeat.set(40, 1); // Match walls orientation
             topTexture.needsUpdate = true;
             materials.push(new THREE.MeshStandardMaterial({
                 map: topTexture,
@@ -480,9 +478,7 @@
             const bottomTexture = textTexture.clone();
             bottomTexture.wrapS = THREE.RepeatWrapping;
             bottomTexture.wrapT = THREE.RepeatWrapping;
-            bottomTexture.center.set(0.5, 0.5); // Set rotation center
-            bottomTexture.rotation = Math.PI / 2; // Rotate 90 degrees
-            bottomTexture.repeat.set(1, 40); // After rotation, this orients along corridor
+            bottomTexture.repeat.set(40, 1); // Match walls orientation
             bottomTexture.needsUpdate = true;
             materials.push(new THREE.MeshStandardMaterial({
                 map: bottomTexture,
