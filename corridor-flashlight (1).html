@@ -311,6 +311,13 @@
         let clock = new THREE.Clock();
         let wallTextures = []; // Store textures for animation
 
+        // Intersection system
+        let corridorSegments = [];
+        let intersections = [];
+        let correctPathCount = 0; // Track correct turns
+        let currentDirection = new THREE.Vector3(0, 0, -1); // Player facing direction
+        let playerRotation = 0; // Player Y rotation in radians
+
         function init() {
             // Scene
             scene = new THREE.Scene();
