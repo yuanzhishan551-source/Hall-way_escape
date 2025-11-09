@@ -285,8 +285,8 @@
         const modes = [
             {
                 name: 'WIDE BEAM',
-                color: 0xff8800,
-                colorHex: '#ff8800',
+                color: 0xff0000,
+                colorHex: '#ff0000',
                 intensity: 2.5,
                 distance: 25,
                 angle: Math.PI / 4,
@@ -464,7 +464,7 @@
             const topTexture = textTexture.clone();
             topTexture.wrapS = THREE.RepeatWrapping;
             topTexture.wrapT = THREE.RepeatWrapping;
-            topTexture.repeat.set(1, 60); // Horizontal orientation, tighter spacing
+            topTexture.repeat.set(1, 100); // No gaps between text blocks
             topTexture.needsUpdate = true;
             materials.push(new THREE.MeshStandardMaterial({
                 map: topTexture,
@@ -478,7 +478,7 @@
             const bottomTexture = textTexture.clone();
             bottomTexture.wrapS = THREE.RepeatWrapping;
             bottomTexture.wrapT = THREE.RepeatWrapping;
-            bottomTexture.repeat.set(1, 60); // Horizontal orientation, tighter spacing
+            bottomTexture.repeat.set(1, 100); // No gaps between text blocks
             bottomTexture.needsUpdate = true;
             materials.push(new THREE.MeshStandardMaterial({
                 map: bottomTexture,
@@ -902,9 +902,9 @@
                         targetOpacity = userData.revealed ? 1.0 : (userData.baseOpacity + pulseFactor);
                     }
 
-                    // Apply freeze effect (orange tint)
+                    // Apply freeze effect (red tint)
                     if (userData.frozen) {
-                        sprite.material.color.setHex(0xff8800); // Orange tint when frozen
+                        sprite.material.color.setHex(0xff0000); // Red tint when frozen
                     } else {
                         sprite.material.color.setHex(0xffffff); // Normal color
                     }
