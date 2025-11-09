@@ -449,7 +449,7 @@
             const rightTexture = textTexture.clone();
             rightTexture.wrapS = THREE.RepeatWrapping;
             rightTexture.wrapT = THREE.RepeatWrapping;
-            rightTexture.repeat.set(40, 1); // Adjust ratio to reduce stretching
+            rightTexture.repeat.set(50, 2); // Fill entire wall with text
             rightTexture.needsUpdate = true;
             wallTextures.push(rightTexture); // Store for animation
             materials.push(new THREE.MeshStandardMaterial({
@@ -464,7 +464,7 @@
             const leftTexture = textTexture.clone();
             leftTexture.wrapS = THREE.RepeatWrapping;
             leftTexture.wrapT = THREE.RepeatWrapping;
-            leftTexture.repeat.set(40, 1);
+            leftTexture.repeat.set(50, 2); // Fill entire wall with text
             leftTexture.needsUpdate = true;
             wallTextures.push(leftTexture); // Store for animation
             materials.push(new THREE.MeshStandardMaterial({
@@ -1261,15 +1261,15 @@
             // Animate flowing text like code stream
             const time = Date.now() * 0.001;
             if (wallTextures.length >= 4) {
-                // Right and left walls: flow along corridor
-                wallTextures[0].offset.x = (time * 0.05) % 1; // Right wall - use modulo to prevent overflow
-                wallTextures[1].offset.x = (time * 0.05) % 1; // Left wall
+                // Right and left walls: flow along corridor (faster)
+                wallTextures[0].offset.x = (time * 0.25) % 1; // Right wall - faster flow
+                wallTextures[1].offset.x = (time * 0.25) % 1; // Left wall
                 wallTextures[0].needsUpdate = true;
                 wallTextures[1].needsUpdate = true;
 
-                // Ceiling and floor: flow horizontally
-                wallTextures[2].offset.y = (time * 0.08) % 1; // Ceiling
-                wallTextures[3].offset.y = (time * 0.08) % 1; // Floor
+                // Ceiling and floor: flow horizontally (faster)
+                wallTextures[2].offset.y = (time * 0.35) % 1; // Ceiling
+                wallTextures[3].offset.y = (time * 0.35) % 1; // Floor
                 wallTextures[2].needsUpdate = true;
                 wallTextures[3].needsUpdate = true;
             }
