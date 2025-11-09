@@ -385,9 +385,9 @@
         }
 
         // ===========================
-        // CREATE TEXT TEXTURE
+        // CREATE TEXT TEXTURE - CONTINUOUS LONG TEXT
         // ===========================
-        function createTextTexture(text, width = 2048, height = 2048) {
+        function createTextTexture(text, width = 4096, height = 4096) {
             const canvas = document.createElement('canvas');
             canvas.width = width;
             canvas.height = height;
@@ -397,23 +397,33 @@
             ctx.fillRect(0, 0, width, height);
 
             ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 56px Courier New'; // Doubled from 28px to 56px
+            ctx.font = 'bold 72px Courier New'; // Increased from 56px to 72px
 
+            // Create very long continuous text by repeating the words
             const words = text.split(' ');
-            let y = 80; // Doubled from 40
-            let x = 40; // Doubled from 20
+            let longText = '';
+            for (let i = 0; i < 200; i++) { // Repeat many times
+                longText += words[Math.floor(Math.random() * words.length)] + ' ';
+            }
 
-            while (y < height - 80) { // Doubled from 40
-                const word = words[Math.floor(Math.random() * words.length)];
-                const metrics = ctx.measureText(word);
+            let y = 100;
+            let x = 50;
+            const lineHeight = 120;
 
-                if (x + metrics.width > width - 80) { // Doubled from 40
-                    x = 40;
-                    y += 100; // Doubled from 50
+            // Fill the entire canvas with continuous text
+            const allWords = longText.split(' ');
+            for (let i = 0; i < allWords.length; i++) {
+                const word = allWords[i];
+                const metrics = ctx.measureText(word + ' ');
+
+                if (x + metrics.width > width - 50) {
+                    x = 50;
+                    y += lineHeight;
+                    if (y > height - 100) break;
                 }
 
                 ctx.fillText(word, x, y);
-                x += metrics.width + 50; // Doubled from 25
+                x += metrics.width;
             }
 
             const texture = new THREE.CanvasTexture(canvas);
@@ -431,14 +441,14 @@
             // Create text texture
             const textTexture = createTextTexture(wallText);
 
-            // Create separate materials for each face with proper repeat
+            // Create separate materials for each face with continuous text
             const materials = [];
 
             // Right wall (long wall: 500 length x 6 height)
             const rightTexture = textTexture.clone();
             rightTexture.wrapS = THREE.RepeatWrapping;
             rightTexture.wrapT = THREE.RepeatWrapping;
-            rightTexture.repeat.set(100, 2); // More repeats to prevent stretching
+            rightTexture.repeat.set(50, 1); // Reduced repeat for larger continuous blocks
             rightTexture.needsUpdate = true;
             materials.push(new THREE.MeshStandardMaterial({ map: rightTexture, side: THREE.BackSide }));
 
@@ -446,7 +456,7 @@
             const leftTexture = textTexture.clone();
             leftTexture.wrapS = THREE.RepeatWrapping;
             leftTexture.wrapT = THREE.RepeatWrapping;
-            leftTexture.repeat.set(100, 2);
+            leftTexture.repeat.set(50, 1);
             leftTexture.needsUpdate = true;
             materials.push(new THREE.MeshStandardMaterial({ map: leftTexture, side: THREE.BackSide }));
 
@@ -454,7 +464,7 @@
             const topTexture = textTexture.clone();
             topTexture.wrapS = THREE.RepeatWrapping;
             topTexture.wrapT = THREE.RepeatWrapping;
-            topTexture.repeat.set(100, 2);
+            topTexture.repeat.set(50, 1);
             topTexture.needsUpdate = true;
             materials.push(new THREE.MeshStandardMaterial({ map: topTexture, side: THREE.BackSide }));
 
@@ -462,7 +472,7 @@
             const bottomTexture = textTexture.clone();
             bottomTexture.wrapS = THREE.RepeatWrapping;
             bottomTexture.wrapT = THREE.RepeatWrapping;
-            bottomTexture.repeat.set(100, 2);
+            bottomTexture.repeat.set(50, 1);
             bottomTexture.needsUpdate = true;
             materials.push(new THREE.MeshStandardMaterial({ map: bottomTexture, side: THREE.BackSide }));
 
@@ -470,7 +480,7 @@
             const frontTexture = textTexture.clone();
             frontTexture.wrapS = THREE.RepeatWrapping;
             frontTexture.wrapT = THREE.RepeatWrapping;
-            frontTexture.repeat.set(1.5, 1.5);
+            frontTexture.repeat.set(1, 1);
             frontTexture.needsUpdate = true;
             materials.push(new THREE.MeshStandardMaterial({ map: frontTexture, side: THREE.BackSide }));
 
@@ -478,7 +488,7 @@
             const backTexture = textTexture.clone();
             backTexture.wrapS = THREE.RepeatWrapping;
             backTexture.wrapT = THREE.RepeatWrapping;
-            backTexture.repeat.set(1.5, 1.5);
+            backTexture.repeat.set(1, 1);
             backTexture.needsUpdate = true;
             materials.push(new THREE.MeshStandardMaterial({ map: backTexture, side: THREE.BackSide }));
 
