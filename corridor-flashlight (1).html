@@ -397,23 +397,23 @@
             ctx.fillRect(0, 0, width, height);
 
             ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 28px Courier New';
+            ctx.font = 'bold 56px Courier New'; // Doubled from 28px to 56px
 
             const words = text.split(' ');
-            let y = 40;
-            let x = 20;
+            let y = 80; // Doubled from 40
+            let x = 40; // Doubled from 20
 
-            while (y < height - 40) {
+            while (y < height - 80) { // Doubled from 40
                 const word = words[Math.floor(Math.random() * words.length)];
                 const metrics = ctx.measureText(word);
 
-                if (x + metrics.width > width - 40) {
-                    x = 20;
-                    y += 50;
+                if (x + metrics.width > width - 80) { // Doubled from 40
+                    x = 40;
+                    y += 100; // Doubled from 50
                 }
 
                 ctx.fillText(word, x, y);
-                x += metrics.width + 25;
+                x += metrics.width + 50; // Doubled from 25
             }
 
             const texture = new THREE.CanvasTexture(canvas);
