@@ -309,6 +309,7 @@
         let scene, camera, renderer, spotlight, flashlightGroup;
         let corridor, monsters = [];
         let clock = new THREE.Clock();
+        let wallTextures = []; // Store textures for animation
 
         function init() {
             // Scene
@@ -450,6 +451,7 @@
             rightTexture.wrapT = THREE.RepeatWrapping;
             rightTexture.repeat.set(40, 1); // Adjust ratio to reduce stretching
             rightTexture.needsUpdate = true;
+            wallTextures.push(rightTexture); // Store for animation
             materials.push(new THREE.MeshStandardMaterial({ map: rightTexture, side: THREE.BackSide }));
 
             // Left wall (long wall: 500 length x 6 height)
@@ -458,6 +460,7 @@
             leftTexture.wrapT = THREE.RepeatWrapping;
             leftTexture.repeat.set(40, 1);
             leftTexture.needsUpdate = true;
+            wallTextures.push(leftTexture); // Store for animation
             materials.push(new THREE.MeshStandardMaterial({ map: leftTexture, side: THREE.BackSide }));
 
             // Top (ceiling: 500 length x 6 width) - Add emissive for visibility
@@ -466,6 +469,7 @@
             topTexture.wrapT = THREE.RepeatWrapping;
             topTexture.repeat.set(1, 100); // No gaps between text blocks
             topTexture.needsUpdate = true;
+            wallTextures.push(topTexture); // Store for animation
             materials.push(new THREE.MeshStandardMaterial({
                 map: topTexture,
                 side: THREE.BackSide,
@@ -480,6 +484,7 @@
             bottomTexture.wrapT = THREE.RepeatWrapping;
             bottomTexture.repeat.set(1, 100); // No gaps between text blocks
             bottomTexture.needsUpdate = true;
+            wallTextures.push(bottomTexture); // Store for animation
             materials.push(new THREE.MeshStandardMaterial({
                 map: bottomTexture,
                 side: THREE.BackSide,
@@ -1239,6 +1244,18 @@
             if (!state.isGameOver && !state.escaped) {
                 updateMovement(delta);
                 updateMonsters(delta);
+            }
+
+            // Animate flowing text like code stream
+            const time = Date.now() * 0.001;
+            if (wallTextures.length >= 4) {
+                // Right and left walls: flow along corridor
+                wallTextures[0].offset.x = time * 0.05; // Right wall
+                wallTextures[1].offset.x = time * 0.05; // Left wall
+
+                // Ceiling and floor: flow horizontally
+                wallTextures[2].offset.y = time * 0.08; // Ceiling
+                wallTextures[3].offset.y = time * 0.08; // Floor
             }
 
             // Random flicker
