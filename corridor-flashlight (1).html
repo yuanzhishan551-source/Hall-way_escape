@@ -357,8 +357,176 @@
             const ambientLight = new THREE.AmbientLight(0x1a1a2e, 0.3);
             scene.add(ambientLight);
 
-            // Create flashlight group (moves with camera)
-            flashlightGroup = new THREE.Group();
+            // Create separate materials for each face with proper repeat
+            const materials = [];
+
+            // Right wall (long wall: 500 length x 4 height)
+            const rightTexture = textTexture.clone();
+            rightTexture.wrapS = THREE.RepeatWrapping;
+            rightTexture.wrapT = THREE.RepeatWrapping;
+            rightTexture.repeat.set(40, 1); // Repeat 40 times horizontally for 500m length
+            rightTexture.needsUpdate = true;
+            materials.push(new THREE.MeshStandardMaterial({ map: rightTexture, side: THREE.BackSide }));
+
+            // Left wall (long wall: 500 length x 4 height)
+            const leftTexture = textTexture.clone();
+            leftTexture.wrapS = THREE.RepeatWrapping;
+            leftTexture.wrapT = THREE.RepeatWrapping;
+            leftTexture.repeat.set(40, 1);
+            leftTexture.needsUpdate = true;
+            materials.push(new THREE.MeshStandardMaterial({ map: leftTexture, side: THREE.BackSide }));
+
+            // Top (long: 500 length x 6 width)
+            const topTexture = textTexture.clone();
+            topTexture.wrapS = THREE.RepeatWrapping;
+            topTexture.wrapT = THREE.RepeatWrapping;
+            topTexture.repeat.set(40, 1);
+            topTexture.needsUpdate = true;
+            materials.push(new THREE.MeshStandardMaterial({ map: topTexture, side: THREE.BackSide }));
+
+            // Bottom (long: 500 length x 6 width)
+            const bottomTexture = textTexture.clone();
+            bottomTexture.wrapS = THREE.RepeatWrapping;
+            bottomTexture.wrapT = THREE.RepeatWrapping;
+            bottomTexture.repeat.set(40, 1);
+            bottomTexture.needsUpdate = true;
+            materials.push(new THREE.MeshStandardMaterial({ map: bottomTexture, side: THREE.BackSide }));
+
+            // Front wall (6 width x 4 height - normal)
+            const frontTexture = textTexture.clone();
+            frontTexture.wrapS = THREE.RepeatWrapping;
+            frontTexture.wrapT = THREE.RepeatWrapping;
+            frontTexture.repeat.set(1, 1);
+            frontTexture.needsUpdate = true;
+            materials.push(new THREE.MeshStandardMaterial({ map: frontTexture, side: THREE.BackSide }));
+
+            // Back wall (6 width x 4 height - normal)
+            const backTexture = textTexture.clone();
+            backTexture.wrapS = THREE.RepeatWrapping;
+            backTexture.wrapT = THREE.RepeatWrapping;
+            backTexture.repeat.set(1, 1);
+            backTexture.needsUpdate = true;
+            materials.push(new THREE.MeshStandardMaterial({ map: backTexture, side: THREE.BackSide }));
+
+            // Long corridor box (6 width, 4 height, 500 length)
+            const corridorGeometry = new THREE.BoxGeometry(6, 4, 500);
+            const corridor = new THREE.Mesh(corridorGeometry, materials);
+            scene.add(corridor);
+
+            // === ADD DOORS ===
+            const textureLoader = new THREE.TextureLoader();
+            const doors = [];
+
+            function createDoor(textureUrl, position, name) {
+                const doorGroup = new THREE.Group();
+
+                // Door frame
+                const frameGeometry = new THREE.BoxGeometry(2.2, 3.2, 0.2);
+                const frameMaterial = new THREE.MeshStandardMaterial({
+                    color: 0x4a3820,
+                    roughness: 0.8
+                });
+                const frame = new THREE.Mesh(frameGeometry, frameMaterial);
+                frame.castShadow = true;
+                doorGroup.add(frame);
+
+                // Door
+                const doorGeometry = new THREE.BoxGeometry(2, 3, 0.15);
+                const doorMaterial = new THREE.MeshStandardMaterial({
+                    color: 0x8b4513,
+                    roughness: 0.6
+                });
+
+                textureLoader.load(
+                    textureUrl,
+                    (texture) => {
+                        doorMaterial.map = texture;
+                        doorMaterial.needsUpdate = true;
+                    },
+                    undefined,
+                    (error) => {
+                        console.log('Door texture failed to load, using fallback color');
+                    }
+                );
+
+                const door = new THREE.Mesh(doorGeometry, doorMaterial);
+                door.position.z = 0.05;
+                door.castShadow = true;
+                doorGroup.add(door);
+
+                // Glow
+                const glowGeometry = new THREE.PlaneGeometry(2.5, 3.5);
+                const glowMaterial = new THREE.MeshBasicMaterial({
+                    color: 0xffffaa,
+                    transparent: true,
+                    opacity: 0,
+                    side: THREE.DoubleSide
+                });
+                const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+                glow.position.z = -0.1;
+                doorGroup.add(glow);
+
+                doorGroup.position.copy(position);
+                doorGroup.userData = {
+                    name: name,
+                    door: door,
+                    glow: glow,
+                    isOpen: false,
+                    openProgress: 0
+                };
+
+                return doorGroup;
+            }
+
+            // Create two doors
+            const door1 = createDoor(
+                'https://m.media-amazon.com/images/I/612SFrHTMNL._AC_SL1500_.jpg',
+                new THREE.Vector3(-2, 1.5, -100),
+                'Door 1'
+            );
+            scene.add(door1);
+            doors.push(door1);
+
+            const door2 = createDoor(
+                'https://m.media-amazon.com/images/I/615KKqEE5dL._AC_SL1500_.jpg',
+                new THREE.Vector3(2, 1.5, -200),
+                'Door 2'
+            );
+            scene.add(door2);
+            doors.push(door2);
+
+            // Door light sources
+            const doorLight1 = new THREE.PointLight(0xffffaa, 0, 10);
+            doorLight1.position.copy(door1.position);
+            scene.add(doorLight1);
+
+            const doorLight2 = new THREE.PointLight(0xffffaa, 0, 10);
+            doorLight2.position.copy(door2.position);
+            scene.add(doorLight2);
+
+            function calculateDoorScreenCoverage(doorGroup) {
+                const doorPosition = new THREE.Vector3();
+                doorGroup.getWorldPosition(doorPosition);
+
+                const distance = camera.position.distanceTo(doorPosition);
+
+                const directionToDoor = new THREE.Vector3();
+                directionToDoor.subVectors(doorPosition, camera.position).normalize();
+
+                const cameraDirection = new THREE.Vector3(0, 0, -1);
+                cameraDirection.applyQuaternion(camera.quaternion);
+
+                const angle = cameraDirection.angleTo(directionToDoor);
+
+                const angularSize = 3 / distance;
+                const coverage = Math.max(0, (1 - angle / (Math.PI / 4)) * angularSize * 100);
+
+                return { coverage, distance };
+            }
+            // === END DOORS ===
+
+            // Flashlight setup
+            const flashlightGroup = new THREE.Group();
             camera.add(flashlightGroup);
             scene.add(camera);
 
@@ -1806,10 +1974,56 @@
                     bugElement.style.top = y + '%';
                 }
 
-                // Random animation delay for staggered glitch effect
-                bugElement.style.animationDelay = (Math.random() * 0.3) + 's';
+                // === UPDATE DOORS ===
+                doors.forEach((doorGroup, index) => {
+                    const { coverage, distance } = calculateDoorScreenCoverage(doorGroup);
+                    const userData = doorGroup.userData;
 
-                container.appendChild(bugElement);
+                    // Update glow based on proximity
+                    if (coverage > 20) {
+                        userData.glow.material.opacity = Math.min(0.3, coverage / 300);
+                        if (index === 0) doorLight1.intensity = Math.min(2, coverage / 50);
+                        if (index === 1) doorLight2.intensity = Math.min(2, coverage / 50);
+                    } else {
+                        userData.glow.material.opacity = 0;
+                        if (index === 0) doorLight1.intensity = 0;
+                        if (index === 1) doorLight2.intensity = 0;
+                    }
+
+                    // Open door at 80% coverage
+                    if (coverage > 80 && !userData.isOpen) {
+                        userData.isOpen = true;
+                        console.log(`Opening ${userData.name}...`);
+                    }
+
+                    // Animate door opening
+                    if (userData.isOpen && userData.openProgress < 1) {
+                        userData.openProgress = Math.min(1, userData.openProgress + delta * 0.5);
+                        userData.door.rotation.y = -Math.PI / 2 * userData.openProgress;
+                        userData.glow.material.opacity = userData.openProgress * 0.8;
+
+                        if (index === 0) doorLight1.intensity = userData.openProgress * 3;
+                        if (index === 1) doorLight2.intensity = userData.openProgress * 3;
+
+                        // Transport when fully open and close
+                        if (userData.openProgress >= 0.99 && distance < 3) {
+                            console.log(`Entering ${userData.name}! Transported to new world...`);
+                            // Simple world transition - fade and teleport
+                            scene.fog.color.setHex(index === 0 ? 0x4a1a1a : 0x1a1a4a);
+                            camera.position.z -= 50; // Move player forward
+                            userData.isOpen = false;
+                            userData.openProgress = 0;
+                        }
+                    }
+
+                    // Pulse glow
+                    if (userData.glow.material.opacity > 0) {
+                        userData.glow.material.opacity += Math.sin(time * 3) * 0.05;
+                    }
+                });
+                // === END UPDATE DOORS ===
+
+                renderer.render(scene, camera);
             }
         }
 
