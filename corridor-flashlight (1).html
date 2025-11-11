@@ -321,6 +321,9 @@
         // Wall text for textures
         const wallText = `RUN ESCAPE DANGER GET OUT FLEE WARNING EXIT HURRY # | / \\ - + = * : . X H M W N data information technology digital world artificial intelligence machine learning algorithm code programming software development BUG ERROR SYSTEM CORRUPTED`;
 
+        // Shared texture cache for performance
+        let sharedWallTexture = null;
+
         // Checkpoint system - infinite generation
         let checkpoints = [];
         let nextCheckpointZ = -100;
@@ -381,18 +384,20 @@
             // Initialize audio
             initAudio();
 
+            // Create shared wall texture once (performance optimization)
+            sharedWallTexture = createTextTexture(wallText);
+
             // Create corridor
             createCorridor();
 
-            // Create initial monsters
-            createMonster();
+            // Create initial monsters (reduced for performance)
             createMonster();
             createMonster();
             setInterval(() => {
-                if (monsters.length < 25) { // Increased from 10 to 25
+                if (monsters.length < 8) { // Reduced from 25 to 8 for performance
                     createMonster();
                 }
-            }, 1500); // Faster spawn: 4000ms -> 1500ms
+            }, 2500); // Slower spawn for performance
 
             // Setup controls
             setupControls();
@@ -454,8 +459,8 @@
         // CREATE 3D CORRIDOR WITH INTERSECTIONS
         // ===========================
         function createCorridor() {
-            // Create text texture
-            const textTexture = createTextTexture(wallText);
+            // Use shared texture for performance
+            const textTexture = sharedWallTexture;
 
             // Corridor dimensions
             const corridorWidth = 6;
@@ -745,8 +750,8 @@
             const branchLength = 18; // Extended to include connection to main corridor
             const branchWidth = 3;
 
-            // Create text texture for branch
-            const branchTexture = createTextTexture(wallText);
+            // Use shared texture for performance
+            const branchTexture = sharedWallTexture;
 
             // Left branch floor (extended to connect to main corridor)
             const leftFloorTex = branchTexture.clone();
@@ -973,14 +978,13 @@
             const wallEndZ = checkpoint.z + openingHalfWidth;
 
             if (wallStartZ > wallEndZ) {
-                // Create wall segment before this checkpoint
-                const baseTexture = createTextTexture(wallText);
-                createWallSegment(wallStartZ, wallEndZ, baseTexture);
+                // Create wall segment before this checkpoint (reuse shared texture)
+                createWallSegment(wallStartZ, wallEndZ, sharedWallTexture);
             }
 
             // Create connecting walls in main corridor area (x=-3 to x=3)
             // These fill the gap where branch corridors don't have front/back walls
-            const connectorTexture = createTextTexture(wallText);
+            const connectorTexture = sharedWallTexture;
             connectorTexture.wrapS = THREE.RepeatWrapping;
             connectorTexture.wrapT = THREE.RepeatWrapping;
             connectorTexture.repeat.set(0.3, 2);
@@ -1155,8 +1159,8 @@
             const monsterType = Math.random() > 0.6 ? 'green' : 'red';
             const baseColor = monsterType === 'red' ? '#ff0000' : '#00ff00';
 
-            // Create 40-60 text fragments in a cluster (much denser)
-            const fragmentCount = Math.floor(Math.random() * 21) + 40; // 40-60 fragments
+            // Create 10-20 text fragments in a cluster (reduced for performance)
+            const fragmentCount = Math.floor(Math.random() * 11) + 10; // 10-20 fragments (was 40-60)
 
             for (let i = 0; i < fragmentCount; i++) {
                 const text = monsterTexts[Math.floor(Math.random() * monsterTexts.length)];
@@ -2044,6 +2048,24 @@
                 // Generate new checkpoints as player progresses
                 if (checkpoints.length > 0 && camera.position.z < checkpoints[checkpoints.length - 1].z + 200) {
                     generateCheckpoint();
+                }
+
+                // Clean up old checkpoints behind player (performance optimization)
+                // Keep only checkpoints within 300 units of player
+                for (let i = checkpoints.length - 1; i >= 0; i--) {
+                    const checkpoint = checkpoints[i];
+                    if (camera.position.z < checkpoint.z - 300) {
+                        // Remove from scene
+                        if (checkpoint.light) scene.remove(checkpoint.light);
+                        if (checkpoint.exitPanel) scene.remove(checkpoint.exitPanel);
+                        if (checkpoint.leftDoor) scene.remove(checkpoint.leftDoor);
+                        if (checkpoint.rightDoor) scene.remove(checkpoint.rightDoor);
+                        if (checkpoint.leftBlock) scene.remove(checkpoint.leftBlock);
+                        if (checkpoint.rightBlock) scene.remove(checkpoint.rightBlock);
+
+                        // Remove from array
+                        checkpoints.splice(i, 1);
+                    }
                 }
             }
 
