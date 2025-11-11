@@ -565,6 +565,12 @@
 
             // Front wall (end of corridor)
             const frontWallTexture = textTexture.clone();
+            frontWallTexture.wrapS = THREE.RepeatWrapping;
+            frontWallTexture.wrapT = THREE.RepeatWrapping;
+            frontWallTexture.repeat.set(2, 2);
+            frontWallTexture.needsUpdate = true;
+            wallTextures.push(frontWallTexture);
+
             const frontWallGeometry = new THREE.PlaneGeometry(corridorWidth, corridorHeight);
             const frontWallMaterial = new THREE.MeshStandardMaterial({
                 map: frontWallTexture,
@@ -579,6 +585,12 @@
 
             // Back wall (start of corridor - where exit door will be)
             const backWallTexture = textTexture.clone();
+            backWallTexture.wrapS = THREE.RepeatWrapping;
+            backWallTexture.wrapT = THREE.RepeatWrapping;
+            backWallTexture.repeat.set(2, 2);
+            backWallTexture.needsUpdate = true;
+            wallTextures.push(backWallTexture);
+
             const backWallGeometry = new THREE.PlaneGeometry(corridorWidth, corridorHeight);
             const backWallMaterial = new THREE.MeshStandardMaterial({
                 map: backWallTexture,
