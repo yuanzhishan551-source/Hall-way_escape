@@ -1,20 +1,30 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Corridor Flashlight Escape</title>
+    <title>The Corridor Flashlight - 3D First Person</title>
+    <!-- Version: 2.0 - Enhanced Monster Count & BUG Invasion System -->
     <style>
-        body {
+        * {
             margin: 0;
-            overflow: hidden;
-            background: #000;
-            font-family: 'Courier New', monospace;
+            padding: 0;
+            box-sizing: border-box;
         }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #000;
+            overflow: hidden;
+        }
+
         #canvas-container {
             width: 100vw;
             height: 100vh;
+            position: relative;
         }
+
+        /* UI Overlay */
         #ui-overlay {
             position: absolute;
             top: 20px;
@@ -24,10 +34,24 @@
             z-index: 100;
             text-shadow: 0 0 10px #00ff00;
             pointer-events: none;
+            font-family: monospace;
             background: rgba(0, 0, 0, 0.7);
             padding: 15px;
             border: 2px solid #00ff00;
         }
+
+        #mode-indicator {
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+
+        #instructions {
+            font-size: 12px;
+            opacity: 0.8;
+            line-height: 1.5;
+        }
+
+        /* Crosshair */
         #crosshair {
             position: absolute;
             top: 50%;
@@ -38,121 +62,300 @@
             pointer-events: none;
             z-index: 50;
         }
+
         #crosshair::before,
         #crosshair::after {
             content: '';
             position: absolute;
             background: rgba(255, 255, 255, 0.7);
         }
+
         #crosshair::before {
             width: 2px;
             height: 100%;
             left: 50%;
             transform: translateX(-50%);
         }
+
         #crosshair::after {
             width: 100%;
             height: 2px;
             top: 50%;
             transform: translateY(-50%);
         }
-        #loading {
+
+
+        /* BUG Invasion overlay - random scattered bugs */
+        #bug-invasion {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            font-size: 24px;
-            z-index: 200;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 60;
+            font-family: monospace;
+            color: #ff0000;
+            font-weight: bold;
+            overflow: hidden;
+        }
+
+        .bug-text {
+            position: absolute;
+            text-shadow: 0 0 8px #ff0000, 0 0 12px #ff0000;
+            opacity: 0.95;
+            white-space: nowrap;
+            animation: bugGlitch 0.3s infinite;
+        }
+
+        @keyframes bugGlitch {
+            0%, 100% {
+                text-shadow: 0 0 8px #ff0000, 0 0 12px #ff0000;
+                opacity: 0.95;
+            }
+            50% {
+                text-shadow: 2px 2px 8px #ff0000, -2px -2px 12px #ff0000;
+                opacity: 0.85;
+            }
+        }
+
+        /* Hit flash effect */
+        #hit-flash {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 0, 0, 0);
+            pointer-events: none;
+            z-index: 70;
+            transition: background 0.1s;
+        }
+
+        .flash-hit {
+            background: rgba(255, 0, 0, 0.5) !important;
+        }
+
+        /* Game Over screen */
+        #game-over {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 300;
+            color: #ff0000;
+            font-size: 48px;
+            text-shadow: 0 0 30px #ff0000;
+        }
+
+        #game-over.show {
+            display: flex;
+        }
+
+        #game-over-text {
+            animation: glitch 0.5s infinite;
+        }
+
+        @keyframes glitch {
+            0%, 100% { transform: translate(0); }
+            20% { transform: translate(-5px, 5px); }
+            40% { transform: translate(5px, -5px); }
+            60% { transform: translate(-5px, -5px); }
+            80% { transform: translate(5px, 5px); }
+        }
+
+        .restart-btn {
+            margin-top: 30px;
+            font-size: 20px;
+            padding: 15px 30px;
+            background: #ff0000;
+            color: #000;
+            border: none;
+            cursor: pointer;
+            font-family: monospace;
+            font-weight: bold;
+        }
+
+        .restart-btn:hover {
+            background: #ff3333;
+        }
+
+        /* Escape Success screen */
+        #escape-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 300;
+            color: #00ff00;
+            font-size: 48px;
+            text-shadow: 0 0 30px #00ff00;
+        }
+
+        #escape-screen.show {
+            display: flex;
+        }
+
+        #escape-text {
+            animation: fadeIn 2s ease-in;
+        }
+
+        @keyframes fadeIn {
+            0% { opacity: 0; transform: scale(0.8); }
+            100% { opacity: 1; transform: scale(1); }
         }
     </style>
 </head>
 <body>
-    <div id="loading">Loading...</div>
+    <div id="canvas-container"></div>
+
+    <!-- Hit Flash Effect -->
+    <div id="hit-flash"></div>
+
+    <!-- BUG Invasion Overlay -->
+    <div id="bug-invasion"></div>
+
+    <!-- Game Over Screen -->
+    <div id="game-over">
+        <div id="game-over-text">SYSTEM CORRUPTED</div>
+        <div style="font-size: 24px; margin-top: 20px;">BUG OVERFLOW</div>
+        <button class="restart-btn" onclick="location.reload()">RESTART</button>
+    </div>
+
+    <!-- Escape Success Screen -->
+    <div id="escape-screen">
+        <div id="escape-text">ESCAPED</div>
+        <div style="font-size: 24px; margin-top: 20px;">You found the EXIT</div>
+        <button class="restart-btn" style="background: #00ff00; color: #000;" onclick="location.reload()">PLAY AGAIN</button>
+    </div>
+
+    <!-- Crosshair -->
     <div id="crosshair"></div>
+
+    <!-- UI Overlay -->
     <div id="ui-overlay">
+        <div id="mode-indicator">MODE: WIDE BEAM</div>
         <div id="instructions">
             WASD: Move<br>
             MOUSE: Look Around<br>
             CLICK: Switch Mode<br>
             ESC: Unlock Mouse
         </div>
-        <div id="mode-indicator" style="margin-top: 15px; font-size: 18px; font-weight: bold; color: #ff8800;">
-            MODE: WIDE BEAM
-        </div>
     </div>
-    <div id="canvas-container"></div>
 
+    <!-- Three.js from CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
     <script>
-        window.addEventListener('load', function() {
-            init();
-        });
+        // ===========================
+        // GLOBAL STATE
+        // ===========================
+        const state = {
+            currentMode: 0,
+            isLocked: false,
+            monsters: [],
+            moveForward: false,
+            moveBackward: false,
+            moveLeft: false,
+            moveRight: false,
+            velocity: new THREE.Vector3(),
+            direction: new THREE.Vector3(),
+            audioContext: null,
+            hitCount: 0,
+            maxHits: 10,
+            isGameOver: false,
+            escaped: false,
+            lastHitTime: 0,
+            invulnerableTime: 1.0 // 1 second invulnerability after hit
+        };
+
+        // Mode configurations
+        const modes = [
+            {
+                name: 'WIDE BEAM',
+                color: 0xff0000,
+                colorHex: '#ff0000',
+                intensity: 2.5,
+                distance: 25,
+                angle: Math.PI / 4,
+                penumbra: 0.5
+            },
+            {
+                name: 'DETECTION',
+                color: 0x00ff00,
+                colorHex: '#00ff00',
+                intensity: 1.8,
+                distance: 30,
+                angle: Math.PI / 6,
+                penumbra: 0.4
+            }
+        ];
+
+        // ===========================
+        // SCENE SETUP
+        // ===========================
+        let scene, camera, renderer, spotlight, flashlightGroup;
+        let corridor, monsters = [];
+        let clock = new THREE.Clock();
+        let wallTextures = []; // Store textures for animation
+
+        // Intersection system
+        let corridorSegments = [];
+        let intersections = [];
+        let correctPathCount = 0; // Track correct turns
+        let currentDirection = new THREE.Vector3(0, 0, -1); // Player facing direction
+        let playerRotation = 0; // Player Y rotation in radians
+
+        // Wall text for textures
+        const wallText = `RUN ESCAPE DANGER GET OUT FLEE WARNING EXIT HURRY # | / \\ - + = * : . X H M W N data information technology digital world artificial intelligence machine learning algorithm code programming software development BUG ERROR SYSTEM CORRUPTED`;
+
+        // Checkpoint system
+        let checkpoints = [
+            { z: -100, passed: false, correctChoice: 'left', exitPanel: null, leftDoor: null, rightDoor: null, leftBlock: null, rightBlock: null }, // First checkpoint
+            { z: -200, passed: false, correctChoice: 'right', exitPanel: null, leftDoor: null, rightDoor: null, leftBlock: null, rightBlock: null }, // Second checkpoint
+            { z: -300, passed: false, correctChoice: 'left', exitPanel: null, leftDoor: null, rightDoor: null, leftBlock: null, rightBlock: null }  // Third checkpoint
+        ];
+        let currentCheckpoint = null;
+        let atCheckpoint = false;
+        let exitRevealed = false; // Track if exit is revealed by green light
 
         function init() {
             // Scene
-            const scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x000000);
-            scene.fog = new THREE.Fog(0x000000, 10, 50);
+            scene = new THREE.Scene();
+            scene.fog = new THREE.Fog(0x0a0a0a, 1, 50);
 
-            // Camera (first person)
-            const camera = new THREE.PerspectiveCamera(
+            // Camera
+            camera = new THREE.PerspectiveCamera(
                 75,
                 window.innerWidth / window.innerHeight,
                 0.1,
                 1000
             );
-            camera.position.set(0, 1.6, 0); // Eye level
+            camera.position.set(0, 1.6, 0); // Eye level height
 
             // Renderer
-            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer = new THREE.WebGLRenderer({ antialias: false }); // No antialiasing for pixelated look
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setPixelRatio(window.devicePixelRatio * 0.7); // Lower pixel ratio for pixelated effect
             renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.BasicShadowMap; // Pixelated shadows
             document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-            document.getElementById('loading').style.display = 'none';
-
-            // Create text texture (from reference code)
-            function createTextTexture(text, width = 2048, height = 2048) {
-                const canvas = document.createElement('canvas');
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-
-                ctx.fillStyle = '#000000';
-                ctx.fillRect(0, 0, width, height);
-
-                ctx.fillStyle = '#ffffff';
-                ctx.font = 'bold 28px Courier New';
-
-                const words = text.split(' ');
-                let y = 40;
-                let x = 20;
-
-                while (y < height - 40) {
-                    const word = words[Math.floor(Math.random() * words.length)];
-                    const metrics = ctx.measureText(word);
-
-                    if (x + metrics.width > width - 40) {
-                        x = 20;
-                        y += 50;
-                    }
-
-                    ctx.fillText(word, x, y);
-                    x += metrics.width + 25;
-                }
-
-                const texture = new THREE.CanvasTexture(canvas);
-                texture.needsUpdate = true;
-                return texture;
-            }
-
-            // Sample text with warnings
-            const wallText = `RUN ESCAPE DANGER GET OUT FLEE WARNING EXIT HURRY # | / \\ - + = * : . X H M W N data information technology digital world artificial intelligence machine learning algorithm code programming software development`;
-
-            // Create corridor with proper texture repeat for each face
-            const textTexture = createTextTexture(wallText);
+            // Ambient light (increased for visibility)
+            const ambientLight = new THREE.AmbientLight(0x1a1a2e, 0.3);
+            scene.add(ambientLight);
 
             // Create separate materials for each face with proper repeat
             const materials = [];
@@ -327,29 +530,8 @@
             camera.add(flashlightGroup);
             scene.add(camera);
 
-            const modes = [
-                {
-                    name: 'WIDE BEAM',
-                    color: 0xff8800,
-                    colorHex: '#ff8800',
-                    intensity: 2.5,
-                    distance: 25,
-                    angle: Math.PI / 4,
-                    penumbra: 0.5
-                },
-                {
-                    name: 'DETECTION',
-                    color: 0x00ff00,
-                    colorHex: '#00ff00',
-                    intensity: 1.8,
-                    distance: 30,
-                    angle: Math.PI / 6,
-                    penumbra: 0.4
-                }
-            ];
-
-            let currentMode = 0;
-            const spotlight = new THREE.SpotLight(
+            // Spotlight (flashlight)
+            spotlight = new THREE.SpotLight(
                 modes[0].color,
                 modes[0].intensity,
                 modes[0].distance,
@@ -359,119 +541,774 @@
             spotlight.position.set(0, -0.2, -0.5);
             spotlight.target.position.set(0, -0.2, -5);
             spotlight.castShadow = true;
+            spotlight.shadow.mapSize.width = 512; // Lower resolution for pixelated shadows
+            spotlight.shadow.mapSize.height = 512;
 
             flashlightGroup.add(spotlight);
             flashlightGroup.add(spotlight.target);
 
-            // Ambient light (very dark)
-            const ambientLight = new THREE.AmbientLight(0x000000, 0.05);
-            scene.add(ambientLight);
+            // Initialize audio
+            initAudio();
 
-            // Monster system
-            const monsters = [];
-
-            function createMonster() {
-                const monsterGroup = new THREE.Group();
-                const monsterType = Math.random() > 0.6 ? 'green' : 'red';
-                const baseColor = monsterType === 'red' ? '#ff0000' : '#00ff00';
-
-                const fragmentCount = Math.floor(Math.random() * 21) + 40;
-
-                for (let i = 0; i < fragmentCount; i++) {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = 256;
-                    canvas.height = 64;
-                    const ctx = canvas.getContext('2d');
-
-                    const alpha = 0.6 + Math.random() * 0.4;
-                    ctx.fillStyle = baseColor;
-                    ctx.font = `bold ${32 + Math.floor(Math.random() * 24)}px monospace`;
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-
-                    ctx.shadowBlur = 15 + Math.random() * 10;
-                    ctx.shadowColor = baseColor;
-                    ctx.fillText('BUG', canvas.width / 2, canvas.height / 2);
-
-                    const texture = new THREE.CanvasTexture(canvas);
-                    texture.magFilter = THREE.NearestFilter;
-                    texture.minFilter = THREE.NearestFilter;
-
-                    const spriteMaterial = new THREE.SpriteMaterial({
-                        map: texture,
-                        transparent: true,
-                        opacity: monsterType === 'green' ? 0.2 : alpha
-                    });
-
-                    const sprite = new THREE.Sprite(spriteMaterial);
-
-                    sprite.position.set(
-                        (Math.random() - 0.5) * 1,
-                        (Math.random() - 0.5) * 1,
-                        (Math.random() - 0.5) * 1
-                    );
-
-                    const scale = 0.8 + Math.random() * 0.6;
-                    sprite.scale.set(scale * 1.5, scale * 0.4, 1);
-
-                    sprite.userData = {
-                        floatOffset: Math.random() * Math.PI * 2,
-                        floatSpeed: 0.5 + Math.random() * 0.5
-                    };
-
-                    monsterGroup.add(sprite);
-                }
-
-                monsterGroup.position.set(
-                    (Math.random() - 0.5) * 4,
-                    1.5 + Math.random() * 1,
-                    -50 - Math.random() * 400
-                );
-
-                monsterGroup.userData = {
-                    type: monsterType,
-                    baseOpacity: monsterType === 'green' ? 0.2 : 0.8,
-                    pulsePhase: Math.random() * Math.PI * 2,
-                    rotationSpeed: (Math.random() - 0.5) * 0.3,
-                    approachSpeed: 0.01 + Math.random() * 0.02,
-                    frozen: false,
-                    freezeTimer: 0,
-                    revealed: false,
-                    disintegrating: false
-                };
-
-                scene.add(monsterGroup);
-                monsters.push(monsterGroup);
-            }
+            // Create corridor
+            createCorridor();
 
             // Create initial monsters
-            for (let i = 0; i < 3; i++) {
-                createMonster();
-            }
-
+            createMonster();
+            createMonster();
+            createMonster();
             setInterval(() => {
-                if (monsters.length < 25) {
+                if (monsters.length < 25) { // Increased from 10 to 25
                     createMonster();
                 }
-            }, 1500);
+            }, 1500); // Faster spawn: 4000ms -> 1500ms
 
-            // Controls
-            const state = {
-                moveForward: false,
-                moveBackward: false,
-                moveLeft: false,
-                moveRight: false,
-                velocity: new THREE.Vector3(),
-                direction: new THREE.Vector3(),
-                isLocked: false
+            // Setup controls
+            setupControls();
+
+            // Handle window resize
+            window.addEventListener('resize', onWindowResize, false);
+
+            // Start animation loop
+            animate();
+        }
+
+        // ===========================
+        // CREATE TEXT TEXTURE - CONTINUOUS LONG TEXT
+        // ===========================
+        function createTextTexture(text, width = 4096, height = 4096) {
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, width, height);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 96px Courier New'; // Increased font size
+
+            // Create very long continuous text by repeating characters (no spaces)
+            const chars = text.replace(/ /g, ''); // Remove all spaces from source
+            let longText = '';
+            for (let i = 0; i < 3000; i++) { // More characters to fill canvas completely
+                longText += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+
+            let y = 96; // Start from top (font size)
+            let x = 0; // No left margin
+            const lineHeight = 130; // Wider line spacing for better readability
+
+            // Fill the entire canvas with continuous text character by character (zero spacing)
+            for (let i = 0; i < longText.length; i++) {
+                const char = longText.charAt(i);
+                const metrics = ctx.measureText(char);
+
+                if (x + metrics.width > width) { // Fill to right edge
+                    x = 0;
+                    y += lineHeight;
+                    if (y > height) break; // Fill to bottom edge
+                }
+
+                ctx.fillText(char, x, y);
+                x += metrics.width; // Exact character width, no extra spacing
+            }
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.needsUpdate = true;
+            return texture;
+        }
+
+        // ===========================
+        // CREATE 3D CORRIDOR WITH INTERSECTIONS
+        // ===========================
+        function createCorridor() {
+            // Create text texture
+            const textTexture = createTextTexture(wallText);
+
+            // Corridor dimensions
+            const corridorWidth = 6;
+            const corridorHeight = 10;
+            const corridorLength = 500;
+
+            // Intersection positions (where openings will be)
+            const intersectionPositions = [-100, -200, -300];
+            const intersectionWidth = 4; // Width of opening
+
+            // Create floor (one continuous piece)
+            const floorTexture = textTexture.clone();
+            floorTexture.wrapS = THREE.RepeatWrapping;
+            floorTexture.wrapT = THREE.RepeatWrapping;
+            floorTexture.repeat.set(1, 100);
+            floorTexture.needsUpdate = true;
+            wallTextures.push(floorTexture);
+
+            const floorGeometry = new THREE.PlaneGeometry(corridorWidth, corridorLength);
+            const floorMaterial = new THREE.MeshStandardMaterial({
+                map: floorTexture,
+                side: THREE.DoubleSide,
+                emissive: 0x555555,
+                emissiveMap: floorTexture,
+                emissiveIntensity: 0.8
+            });
+            const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.y = -5;
+            scene.add(floor);
+
+            // Create ceiling (one continuous piece)
+            const ceilingTexture = textTexture.clone();
+            ceilingTexture.wrapS = THREE.RepeatWrapping;
+            ceilingTexture.wrapT = THREE.RepeatWrapping;
+            ceilingTexture.repeat.set(1, 100);
+            ceilingTexture.needsUpdate = true;
+            wallTextures.push(ceilingTexture);
+
+            const ceilingGeometry = new THREE.PlaneGeometry(corridorWidth, corridorLength);
+            const ceilingMaterial = new THREE.MeshStandardMaterial({
+                map: ceilingTexture,
+                side: THREE.DoubleSide,
+                emissive: 0x555555,
+                emissiveMap: ceilingTexture,
+                emissiveIntensity: 0.8
+            });
+            const ceiling = new THREE.Mesh(ceilingGeometry, ceilingMaterial);
+            ceiling.rotation.x = -Math.PI / 2;
+            ceiling.position.y = 5;
+            scene.add(ceiling);
+
+            // Create segmented walls with openings at intersections
+            // Build walls in segments between intersections
+            const segments = [
+                { start: 250, end: 120 },   // Before first intersection
+                { start: 96, end: 20 },     // Between 1st and 2nd intersection
+                { start: -4, end: -80 },    // Between 2nd and 3rd intersection
+                { start: -104, end: -250 }  // After last intersection
+            ];
+
+            segments.forEach(segment => {
+                const segmentLength = Math.abs(segment.end - segment.start);
+                const segmentCenter = (segment.start + segment.end) / 2;
+
+                // Right wall segment
+                const rightWallTexture = textTexture.clone();
+                rightWallTexture.wrapS = THREE.RepeatWrapping;
+                rightWallTexture.wrapT = THREE.RepeatWrapping;
+                rightWallTexture.repeat.set(segmentLength / 10, 2);
+                rightWallTexture.needsUpdate = true;
+                wallTextures.push(rightWallTexture);
+
+                const rightWallGeometry = new THREE.PlaneGeometry(segmentLength, corridorHeight);
+                const rightWallMaterial = new THREE.MeshStandardMaterial({
+                    map: rightWallTexture,
+                    side: THREE.DoubleSide,
+                    emissive: 0x555555,
+                    emissiveMap: rightWallTexture,
+                    emissiveIntensity: 0.8
+                });
+                const rightWall = new THREE.Mesh(rightWallGeometry, rightWallMaterial);
+                rightWall.position.set(3, 0, segmentCenter);
+                rightWall.rotation.y = -Math.PI / 2;
+                scene.add(rightWall);
+
+                // Left wall segment
+                const leftWallTexture = textTexture.clone();
+                leftWallTexture.wrapS = THREE.RepeatWrapping;
+                leftWallTexture.wrapT = THREE.RepeatWrapping;
+                leftWallTexture.repeat.set(segmentLength / 10, 2);
+                leftWallTexture.needsUpdate = true;
+                wallTextures.push(leftWallTexture);
+
+                const leftWallGeometry = new THREE.PlaneGeometry(segmentLength, corridorHeight);
+                const leftWallMaterial = new THREE.MeshStandardMaterial({
+                    map: leftWallTexture,
+                    side: THREE.DoubleSide,
+                    emissive: 0x555555,
+                    emissiveMap: leftWallTexture,
+                    emissiveIntensity: 0.8
+                });
+                const leftWall = new THREE.Mesh(leftWallGeometry, leftWallMaterial);
+                leftWall.position.set(-3, 0, segmentCenter);
+                leftWall.rotation.y = -Math.PI / 2;
+                scene.add(leftWall);
+            });
+
+            // Front wall (end of corridor)
+            const frontWallTexture = textTexture.clone();
+            const frontWallGeometry = new THREE.PlaneGeometry(corridorWidth, corridorHeight);
+            const frontWallMaterial = new THREE.MeshStandardMaterial({
+                map: frontWallTexture,
+                side: THREE.DoubleSide,
+                emissive: 0x555555,
+                emissiveMap: frontWallTexture,
+                emissiveIntensity: 0.8
+            });
+            const frontWall = new THREE.Mesh(frontWallGeometry, frontWallMaterial);
+            frontWall.position.z = 250;
+            scene.add(frontWall);
+
+            // Back wall (start of corridor - where exit door will be)
+            const backWallTexture = textTexture.clone();
+            const backWallGeometry = new THREE.PlaneGeometry(corridorWidth, corridorHeight);
+            const backWallMaterial = new THREE.MeshStandardMaterial({
+                map: backWallTexture,
+                side: THREE.DoubleSide,
+                emissive: 0x555555,
+                emissiveMap: backWallTexture,
+                emissiveIntensity: 0.8
+            });
+            const backWall = new THREE.Mesh(backWallGeometry, backWallMaterial);
+            backWall.position.z = -250;
+            scene.add(backWall);
+
+            // Exit door will be created after 3 correct choices
+            // createExitDoor(500, 6, 10);
+
+            // Create visual checkpoint markers and branch corridors
+            createCheckpointMarkers();
+        }
+
+        // ===========================
+        // CREATE CHECKPOINT MARKERS
+        // ===========================
+        function createCheckpointMarkers() {
+            checkpoints.forEach((checkpoint, index) => {
+                // Create floor marker with arrows indicating direction
+                const markerCanvas = document.createElement('canvas');
+                markerCanvas.width = 512;
+                markerCanvas.height = 512;
+                const ctx = markerCanvas.getContext('2d');
+
+                // Yellow glowing circle
+                ctx.fillStyle = '#ffaa00';
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = '#ffaa00';
+                ctx.beginPath();
+                ctx.arc(256, 256, 180, 0, Math.PI * 2);
+                ctx.fill();
+
+                // White inner circle
+                ctx.fillStyle = '#ffffff';
+                ctx.shadowBlur = 0;
+                ctx.beginPath();
+                ctx.arc(256, 256, 150, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Black text with checkpoint number
+                ctx.fillStyle = '#000000';
+                ctx.font = 'bold 120px monospace';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(`${index + 1}`, 256, 220);
+
+                // Arrows indicating left/right choice
+                ctx.font = 'bold 60px monospace';
+                ctx.fillText('Q←  →E', 256, 320);
+
+                const markerTexture = new THREE.CanvasTexture(markerCanvas);
+                markerTexture.magFilter = THREE.NearestFilter;
+                markerTexture.minFilter = THREE.NearestFilter;
+
+                const markerGeometry = new THREE.PlaneGeometry(3, 3);
+                const markerMaterial = new THREE.MeshStandardMaterial({
+                    map: markerTexture,
+                    transparent: true,
+                    emissive: 0xffaa00,
+                    emissiveIntensity: 0.5
+                });
+
+                const marker = new THREE.Mesh(markerGeometry, markerMaterial);
+                marker.rotation.x = -Math.PI / 2; // Lay flat on floor
+                marker.position.set(0, 0.01, checkpoint.z); // Slightly above floor to prevent z-fighting
+                scene.add(marker);
+
+                // Add pulsing light at checkpoint
+                const checkpointLight = new THREE.PointLight(0xffaa00, 0.8, 10);
+                checkpointLight.position.set(0, 2, checkpoint.z);
+                scene.add(checkpointLight);
+
+                // Store light reference for animation
+                checkpoint.light = checkpointLight;
+
+                // Create EXIT text panel on correct wall (initially invisible)
+                const exitCanvas = document.createElement('canvas');
+                exitCanvas.width = 1024;
+                exitCanvas.height = 512;
+                const exitCtx = exitCanvas.getContext('2d');
+
+                // Green glowing background
+                exitCtx.fillStyle = '#00ff00';
+                exitCtx.shadowBlur = 30;
+                exitCtx.shadowColor = '#00ff00';
+                exitCtx.fillRect(0, 0, exitCanvas.width, exitCanvas.height);
+
+                // Black EXIT text
+                exitCtx.shadowBlur = 0;
+                exitCtx.fillStyle = '#000000';
+                exitCtx.font = 'bold 200px monospace';
+                exitCtx.textAlign = 'center';
+                exitCtx.textBaseline = 'middle';
+                exitCtx.fillText('EXIT', exitCanvas.width / 2, exitCanvas.height / 2);
+
+                // Arrow pointing forward
+                exitCtx.font = 'bold 100px monospace';
+                exitCtx.fillText('↓', exitCanvas.width / 2, exitCanvas.height / 2 + 150);
+
+                const exitTexture = new THREE.CanvasTexture(exitCanvas);
+                exitTexture.magFilter = THREE.NearestFilter;
+                exitTexture.minFilter = THREE.NearestFilter;
+
+                const exitGeometry = new THREE.PlaneGeometry(4, 2);
+                const exitMaterial = new THREE.MeshStandardMaterial({
+                    map: exitTexture,
+                    transparent: true,
+                    opacity: 0, // Start invisible
+                    emissive: 0x00ff00,
+                    emissiveIntensity: 1.0,
+                    side: THREE.DoubleSide
+                });
+
+                const exitPanel = new THREE.Mesh(exitGeometry, exitMaterial);
+
+                // Position on correct wall
+                if (checkpoint.correctChoice === 'left') {
+                    exitPanel.position.set(-2.9, 3, checkpoint.z); // Left wall
+                    exitPanel.rotation.y = Math.PI / 2;
+                } else {
+                    exitPanel.position.set(2.9, 3, checkpoint.z); // Right wall
+                    exitPanel.rotation.y = -Math.PI / 2;
+                }
+
+                scene.add(exitPanel);
+                checkpoint.exitPanel = exitPanel;
+
+                // Create LEFT branch corridor using planes
+                const leftBranchGroup = new THREE.Group();
+                const branchLength = 18; // Extended to include connection to main corridor
+                const branchWidth = 3;
+
+                // Create text texture for branch
+                const branchTexture = createTextTexture(wallText);
+
+                // Left branch floor (extended to connect to main corridor)
+                const leftFloorTex = branchTexture.clone();
+                leftFloorTex.wrapS = THREE.RepeatWrapping;
+                leftFloorTex.wrapT = THREE.RepeatWrapping;
+                leftFloorTex.repeat.set(1, 6);
+                leftFloorTex.needsUpdate = true;
+                const leftFloorGeo = new THREE.PlaneGeometry(branchWidth, branchLength);
+                const leftFloorMat = new THREE.MeshStandardMaterial({
+                    map: leftFloorTex,
+                    side: THREE.DoubleSide,
+                    emissive: 0x555555,
+                    emissiveMap: leftFloorTex,
+                    emissiveIntensity: 0.8
+                });
+                const leftFloor = new THREE.Mesh(leftFloorGeo, leftFloorMat);
+                leftFloor.rotation.x = -Math.PI / 2;
+                leftFloor.rotation.z = Math.PI / 2;
+                leftFloor.position.set(-branchLength / 2, -5, checkpoint.z); // Start from x=0 (main corridor center)
+                leftBranchGroup.add(leftFloor);
+
+                // Left branch ceiling (extended to connect to main corridor)
+                const leftCeilingTex = branchTexture.clone();
+                leftCeilingTex.wrapS = THREE.RepeatWrapping;
+                leftCeilingTex.wrapT = THREE.RepeatWrapping;
+                leftCeilingTex.repeat.set(1, 6);
+                leftCeilingTex.needsUpdate = true;
+                const leftCeilingGeo = new THREE.PlaneGeometry(branchWidth, branchLength);
+                const leftCeilingMat = new THREE.MeshStandardMaterial({
+                    map: leftCeilingTex,
+                    side: THREE.DoubleSide,
+                    emissive: 0x555555,
+                    emissiveMap: leftCeilingTex,
+                    emissiveIntensity: 0.8
+                });
+                const leftCeiling = new THREE.Mesh(leftCeilingGeo, leftCeilingMat);
+                leftCeiling.rotation.x = -Math.PI / 2;
+                leftCeiling.rotation.z = Math.PI / 2;
+                leftCeiling.position.set(-branchLength / 2, 5, checkpoint.z); // Start from x=0
+                leftBranchGroup.add(leftCeiling);
+
+                // Left branch back wall
+                const leftBackWallTex = branchTexture.clone();
+                leftBackWallTex.wrapS = THREE.RepeatWrapping;
+                leftBackWallTex.wrapT = THREE.RepeatWrapping;
+                leftBackWallTex.repeat.set(6, 2);
+                leftBackWallTex.needsUpdate = true;
+                const leftBackWallGeo = new THREE.PlaneGeometry(branchLength, 10);
+                const leftBackWallMat = new THREE.MeshStandardMaterial({
+                    map: leftBackWallTex,
+                    side: THREE.DoubleSide,
+                    emissive: 0x555555,
+                    emissiveMap: leftBackWallTex,
+                    emissiveIntensity: 0.8
+                });
+                const leftBackWall = new THREE.Mesh(leftBackWallGeo, leftBackWallMat);
+                leftBackWall.rotation.y = Math.PI / 2;
+                leftBackWall.position.set(-branchLength / 2, 0, checkpoint.z - branchWidth / 2);
+                leftBranchGroup.add(leftBackWall);
+
+                // Left branch front wall
+                const leftFrontWallTex = branchTexture.clone();
+                leftFrontWallTex.wrapS = THREE.RepeatWrapping;
+                leftFrontWallTex.wrapT = THREE.RepeatWrapping;
+                leftFrontWallTex.repeat.set(6, 2);
+                leftFrontWallTex.needsUpdate = true;
+                const leftFrontWallGeo = new THREE.PlaneGeometry(branchLength, 10);
+                const leftFrontWallMat = new THREE.MeshStandardMaterial({
+                    map: leftFrontWallTex,
+                    side: THREE.DoubleSide,
+                    emissive: 0x555555,
+                    emissiveMap: leftFrontWallTex,
+                    emissiveIntensity: 0.8
+                });
+                const leftFrontWall = new THREE.Mesh(leftFrontWallGeo, leftFrontWallMat);
+                leftFrontWall.rotation.y = Math.PI / 2;
+                leftFrontWall.position.set(-branchLength / 2, 0, checkpoint.z + branchWidth / 2);
+                leftBranchGroup.add(leftFrontWall);
+
+                // Left branch end wall
+                const leftEndWallTex = branchTexture.clone();
+                const leftEndWallGeo = new THREE.PlaneGeometry(branchWidth, 10);
+                const leftEndWallMat = new THREE.MeshStandardMaterial({
+                    map: leftEndWallTex,
+                    side: THREE.DoubleSide,
+                    emissive: 0x555555,
+                    emissiveMap: leftEndWallTex,
+                    emissiveIntensity: 0.8
+                });
+                const leftEndWall = new THREE.Mesh(leftEndWallGeo, leftEndWallMat);
+                leftEndWall.position.set(-branchLength, 0, checkpoint.z);
+                leftBranchGroup.add(leftEndWall);
+
+                scene.add(leftBranchGroup);
+                checkpoint.leftDoor = leftBranchGroup;
+
+                // Create RIGHT branch corridor using planes
+                const rightBranchGroup = new THREE.Group();
+
+                // Right branch floor (extended to connect to main corridor)
+                const rightFloorTex = branchTexture.clone();
+                rightFloorTex.wrapS = THREE.RepeatWrapping;
+                rightFloorTex.wrapT = THREE.RepeatWrapping;
+                rightFloorTex.repeat.set(1, 6);
+                rightFloorTex.needsUpdate = true;
+                const rightFloorGeo = new THREE.PlaneGeometry(branchWidth, branchLength);
+                const rightFloorMat = new THREE.MeshStandardMaterial({
+                    map: rightFloorTex,
+                    side: THREE.DoubleSide,
+                    emissive: 0x555555,
+                    emissiveMap: rightFloorTex,
+                    emissiveIntensity: 0.8
+                });
+                const rightFloor = new THREE.Mesh(rightFloorGeo, rightFloorMat);
+                rightFloor.rotation.x = -Math.PI / 2;
+                rightFloor.rotation.z = Math.PI / 2;
+                rightFloor.position.set(branchLength / 2, -5, checkpoint.z); // Start from x=0
+                rightBranchGroup.add(rightFloor);
+
+                // Right branch ceiling (extended to connect to main corridor)
+                const rightCeilingTex = branchTexture.clone();
+                rightCeilingTex.wrapS = THREE.RepeatWrapping;
+                rightCeilingTex.wrapT = THREE.RepeatWrapping;
+                rightCeilingTex.repeat.set(1, 6);
+                rightCeilingTex.needsUpdate = true;
+                const rightCeilingGeo = new THREE.PlaneGeometry(branchWidth, branchLength);
+                const rightCeilingMat = new THREE.MeshStandardMaterial({
+                    map: rightCeilingTex,
+                    side: THREE.DoubleSide,
+                    emissive: 0x555555,
+                    emissiveMap: rightCeilingTex,
+                    emissiveIntensity: 0.8
+                });
+                const rightCeiling = new THREE.Mesh(rightCeilingGeo, rightCeilingMat);
+                rightCeiling.rotation.x = -Math.PI / 2;
+                rightCeiling.rotation.z = Math.PI / 2;
+                rightCeiling.position.set(branchLength / 2, 5, checkpoint.z); // Start from x=0
+                rightBranchGroup.add(rightCeiling);
+
+                // Right branch back wall
+                const rightBackWallTex = branchTexture.clone();
+                rightBackWallTex.wrapS = THREE.RepeatWrapping;
+                rightBackWallTex.wrapT = THREE.RepeatWrapping;
+                rightBackWallTex.repeat.set(6, 2);
+                rightBackWallTex.needsUpdate = true;
+                const rightBackWallGeo = new THREE.PlaneGeometry(branchLength, 10);
+                const rightBackWallMat = new THREE.MeshStandardMaterial({
+                    map: rightBackWallTex,
+                    side: THREE.DoubleSide,
+                    emissive: 0x555555,
+                    emissiveMap: rightBackWallTex,
+                    emissiveIntensity: 0.8
+                });
+                const rightBackWall = new THREE.Mesh(rightBackWallGeo, rightBackWallMat);
+                rightBackWall.rotation.y = Math.PI / 2;
+                rightBackWall.position.set(branchLength / 2, 0, checkpoint.z - branchWidth / 2);
+                rightBranchGroup.add(rightBackWall);
+
+                // Right branch front wall
+                const rightFrontWallTex = branchTexture.clone();
+                rightFrontWallTex.wrapS = THREE.RepeatWrapping;
+                rightFrontWallTex.wrapT = THREE.RepeatWrapping;
+                rightFrontWallTex.repeat.set(6, 2);
+                rightFrontWallTex.needsUpdate = true;
+                const rightFrontWallGeo = new THREE.PlaneGeometry(branchLength, 10);
+                const rightFrontWallMat = new THREE.MeshStandardMaterial({
+                    map: rightFrontWallTex,
+                    side: THREE.DoubleSide,
+                    emissive: 0x555555,
+                    emissiveMap: rightFrontWallTex,
+                    emissiveIntensity: 0.8
+                });
+                const rightFrontWall = new THREE.Mesh(rightFrontWallGeo, rightFrontWallMat);
+                rightFrontWall.rotation.y = Math.PI / 2;
+                rightFrontWall.position.set(branchLength / 2, 0, checkpoint.z + branchWidth / 2);
+                rightBranchGroup.add(rightFrontWall);
+
+                // Right branch end wall
+                const rightEndWallTex = branchTexture.clone();
+                const rightEndWallGeo = new THREE.PlaneGeometry(branchWidth, 10);
+                const rightEndWallMat = new THREE.MeshStandardMaterial({
+                    map: rightEndWallTex,
+                    side: THREE.DoubleSide,
+                    emissive: 0x555555,
+                    emissiveMap: rightEndWallTex,
+                    emissiveIntensity: 0.8
+                });
+                const rightEndWall = new THREE.Mesh(rightEndWallGeo, rightEndWallMat);
+                rightEndWall.position.set(branchLength, 0, checkpoint.z);
+                rightBranchGroup.add(rightEndWall);
+
+                scene.add(rightBranchGroup);
+                checkpoint.rightDoor = rightBranchGroup;
+
+                // Create blocking walls (initially invisible, will appear for wrong choices)
+                const blockWallGeometry = new THREE.PlaneGeometry(3, 8);
+                const blockWallMaterial = new THREE.MeshStandardMaterial({
+                    color: 0x330000,
+                    transparent: true,
+                    opacity: 0,
+                    emissive: 0xff0000,
+                    emissiveIntensity: 0
+                });
+
+                // Left blocking wall
+                const leftBlock = new THREE.Mesh(blockWallGeometry, blockWallMaterial.clone());
+                leftBlock.position.set(-2.95, 4, checkpoint.z);
+                leftBlock.rotation.y = Math.PI / 2;
+                scene.add(leftBlock);
+                checkpoint.leftBlock = leftBlock;
+
+                // Right blocking wall
+                const rightBlock = new THREE.Mesh(blockWallGeometry, blockWallMaterial.clone());
+                rightBlock.position.set(2.95, 4, checkpoint.z);
+                rightBlock.rotation.y = -Math.PI / 2;
+                scene.add(rightBlock);
+                checkpoint.rightBlock = rightBlock;
+            });
+        }
+
+        // ===========================
+        // CREATE EXIT DOOR
+        // ===========================
+        function createExitDoor(length, width, height) {
+            const doorGroup = new THREE.Group();
+
+            // Door position at the end of corridor
+            const doorZ = -length / 2 + 0.5; // Slight offset from wall
+
+            // Door frame (black)
+            const doorGeometry = new THREE.BoxGeometry(2, 3, 0.2);
+            const doorMaterial = new THREE.MeshStandardMaterial({
+                color: 0x0a0a0a,
+                roughness: 0.8,
+                metalness: 0.2
+            });
+            const door = new THREE.Mesh(doorGeometry, doorMaterial);
+            door.position.set(0, 1.5, doorZ);
+            door.receiveShadow = true;
+            door.castShadow = true;
+            doorGroup.add(door);
+
+            // Door handle (darker gray)
+            const handleGeometry = new THREE.BoxGeometry(0.3, 0.1, 0.1);
+            const handleMaterial = new THREE.MeshStandardMaterial({
+                color: 0x333333,
+                roughness: 0.5,
+                metalness: 0.5
+            });
+            const handle = new THREE.Mesh(handleGeometry, handleMaterial);
+            handle.position.set(0.7, 1.5, doorZ + 0.15);
+            doorGroup.add(handle);
+
+            // EXIT sign (green glowing)
+            const signCanvas = document.createElement('canvas');
+            signCanvas.width = 256;
+            signCanvas.height = 128;
+            const ctx = signCanvas.getContext('2d');
+
+            // Green background
+            ctx.fillStyle = '#00aa00';
+            ctx.fillRect(0, 0, signCanvas.width, signCanvas.height);
+
+            // White border
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 4;
+            ctx.strokeRect(5, 5, signCanvas.width - 10, signCanvas.height - 10);
+
+            // EXIT text
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 72px monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('EXIT', signCanvas.width / 2, signCanvas.height / 2);
+
+            // Running man icon (simple representation)
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(60, 64, 12, 0, Math.PI * 2); // Head
+            ctx.fill();
+            ctx.fillRect(55, 76, 10, 20); // Body
+            ctx.fillRect(50, 80, 5, 15); // Left leg
+            ctx.fillRect(65, 80, 5, 15); // Right leg
+
+            const signTexture = new THREE.CanvasTexture(signCanvas);
+            signTexture.magFilter = THREE.NearestFilter;
+            signTexture.minFilter = THREE.NearestFilter;
+
+            const signGeometry = new THREE.PlaneGeometry(1.5, 0.75);
+            const signMaterial = new THREE.MeshStandardMaterial({
+                map: signTexture,
+                emissive: 0x00ff00,
+                emissiveIntensity: 0.5
+            });
+            const sign = new THREE.Mesh(signGeometry, signMaterial);
+            sign.position.set(0, 3.3, doorZ + 0.1);
+            doorGroup.add(sign);
+
+            // Green light from sign
+            const signLight = new THREE.PointLight(0x00ff00, 0.5, 5);
+            signLight.position.set(0, 3.3, doorZ + 0.5);
+            doorGroup.add(signLight);
+
+            scene.add(doorGroup);
+        }
+
+        // ===========================
+        // CREATE TEXT MONSTERS (CLUSTERS)
+        // ===========================
+        function createMonster() {
+            const monsterTexts = ['BUG']; // Only use BUG
+
+            // Create a group for the monster cluster
+            const monsterCluster = new THREE.Group();
+
+            // Determine monster type
+            const monsterType = Math.random() > 0.6 ? 'green' : 'red';
+            const baseColor = monsterType === 'red' ? '#ff0000' : '#00ff00';
+
+            // Create 40-60 text fragments in a cluster (much denser)
+            const fragmentCount = Math.floor(Math.random() * 21) + 40; // 40-60 fragments
+
+            for (let i = 0; i < fragmentCount; i++) {
+                const text = monsterTexts[Math.floor(Math.random() * monsterTexts.length)];
+
+                // Create text sprite
+                const canvas = document.createElement('canvas');
+                canvas.width = 256;
+                canvas.height = 64;
+                const ctx = canvas.getContext('2d');
+
+                // Vary opacity and size for depth
+                const alpha = 0.6 + Math.random() * 0.4;
+                ctx.fillStyle = baseColor;
+                ctx.font = `bold ${32 + Math.floor(Math.random() * 24)}px monospace`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                // Add glow
+                ctx.shadowBlur = 15 + Math.random() * 10;
+                ctx.shadowColor = baseColor;
+                ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+
+                const texture = new THREE.CanvasTexture(canvas);
+                texture.magFilter = THREE.NearestFilter;
+                texture.minFilter = THREE.NearestFilter;
+
+                const spriteMaterial = new THREE.SpriteMaterial({
+                    map: texture,
+                    transparent: true,
+                    opacity: monsterType === 'green' ? 0.2 : alpha // Green monsters nearly invisible
+                });
+
+                const sprite = new THREE.Sprite(spriteMaterial);
+
+                // Random position within cluster (1x1x1 cube - much tighter)
+                sprite.position.set(
+                    (Math.random() - 0.5) * 1,
+                    (Math.random() - 0.5) * 1,
+                    (Math.random() - 0.5) * 1
+                );
+
+                // Random scale
+                const scale = 0.8 + Math.random() * 0.6;
+                sprite.scale.set(scale * 1.5, scale * 0.4, 1);
+
+                // Store individual fragment animation data
+                sprite.userData = {
+                    floatOffset: Math.random() * Math.PI * 2,
+                    floatSpeed: 0.5 + Math.random() * 0.5
+                };
+
+                monsterCluster.add(sprite);
+            }
+
+            // Position cluster in corridor (far away from player in 500m corridor)
+            monsterCluster.position.set(
+                (Math.random() - 0.5) * 4,
+                1.5 + Math.random() * 1,
+                -50 - Math.random() * 400 // Start far away in long corridor
+            );
+
+            // Store cluster data
+            monsterCluster.userData = {
+                type: monsterType,
+                baseOpacity: monsterType === 'green' ? 0.2 : 0.8,
+                pulsePhase: Math.random() * Math.PI * 2,
+                rotationSpeed: (Math.random() - 0.5) * 0.3,
+                approachSpeed: 0.01 + Math.random() * 0.02, // Speed towards player
+                frozen: false,
+                freezeTimer: 0,
+                revealed: false,
+                disintegrating: false
             };
 
+            scene.add(monsterCluster);
+            monsters.push(monsterCluster);
+        }
+
+        // ===========================
+        // CONTROLS
+        // ===========================
+        function setupControls() {
+            // Keyboard controls
             document.addEventListener('keydown', (e) => {
                 switch (e.code) {
                     case 'KeyW': state.moveForward = true; break;
                     case 'KeyS': state.moveBackward = true; break;
                     case 'KeyA': state.moveLeft = true; break;
                     case 'KeyD': state.moveRight = true; break;
+                    case 'KeyQ':
+                        if (atCheckpoint && currentCheckpoint) {
+                            handleCheckpointChoice('left');
+                        }
+                        break;
+                    case 'KeyE':
+                        if (atCheckpoint && currentCheckpoint) {
+                            handleCheckpointChoice('right');
+                        }
+                        break;
                 }
             });
 
@@ -484,6 +1321,7 @@
                 }
             });
 
+            // Mouse look - request pointer lock on first click
             renderer.domElement.addEventListener('click', () => {
                 if (!state.isLocked) {
                     renderer.domElement.requestPointerLock();
@@ -503,167 +1341,637 @@
                 camera.rotation.y -= movementX * 0.002;
                 camera.rotation.x -= movementY * 0.002;
 
+                // Clamp vertical rotation
                 camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x));
             });
 
             // Click to switch mode
             document.addEventListener('click', () => {
                 if (state.isLocked) {
-                    currentMode = (currentMode + 1) % modes.length;
-                    const mode = modes[currentMode];
-
-                    spotlight.color.setHex(mode.color);
-                    spotlight.intensity = mode.intensity;
-                    spotlight.distance = mode.distance;
-                    spotlight.angle = mode.angle;
-                    spotlight.penumbra = mode.penumbra;
-
-                    document.getElementById('mode-indicator').textContent = `MODE: ${mode.name}`;
-                    document.getElementById('mode-indicator').style.color = mode.colorHex;
+                    switchMode();
                 }
             });
+        }
 
-            // Animation
-            const clock = new THREE.Clock();
+        // ===========================
+        // SWITCH FLASHLIGHT MODE
+        // ===========================
+        function switchMode() {
+            state.currentMode = (state.currentMode + 1) % modes.length;
+            const mode = modes[state.currentMode];
 
-            function checkFlashlightHit(monsterGroup) {
-                const monsterPos = new THREE.Vector3();
-                monsterPos.copy(monsterGroup.position);
+            spotlight.color.setHex(mode.color);
+            spotlight.intensity = mode.intensity;
+            spotlight.distance = mode.distance;
+            spotlight.angle = mode.angle;
+            spotlight.penumbra = mode.penumbra;
 
-                const cameraToMonster = new THREE.Vector3();
-                cameraToMonster.subVectors(monsterPos, camera.position);
+            document.getElementById('mode-indicator').textContent = `MODE: ${mode.name}`;
+            document.getElementById('mode-indicator').style.color = mode.colorHex;
 
-                const distance = cameraToMonster.length();
+            // Flicker effect
+            spotlight.intensity *= 1.5;
+            setTimeout(() => {
+                spotlight.intensity = mode.intensity;
+            }, 100);
+        }
 
-                const mode = modes[currentMode];
+        // ===========================
+        // CHECKPOINT SYSTEM
+        // ===========================
+        function handleCheckpointChoice(choice) {
+            if (!currentCheckpoint || currentCheckpoint.passed) return;
 
-                if (distance > mode.distance) return false;
+            currentCheckpoint.passed = true;
+            atCheckpoint = false;
 
-                const cameraDirection = new THREE.Vector3(0, 0, -1);
-                cameraDirection.applyQuaternion(camera.quaternion);
+            if (choice === currentCheckpoint.correctChoice) {
+                correctPathCount++;
+                console.log(`✅ Correct choice! Progress: ${correctPathCount}/3`);
 
-                cameraToMonster.normalize();
-                const angle = Math.acos(cameraDirection.dot(cameraToMonster));
+                // Update UI
+                document.getElementById('mode-indicator').textContent = `CORRECT PATHS: ${correctPathCount}/3`;
+                document.getElementById('mode-indicator').style.color = '#00ff00';
 
-                return angle < mode.angle;
-            }
+                setTimeout(() => {
+                    document.getElementById('mode-indicator').textContent = `MODE: ${modes[state.currentMode].name}`;
+                    document.getElementById('mode-indicator').style.color = modes[state.currentMode].colorHex;
+                }, 2000);
 
-            function animate() {
-                requestAnimationFrame(animate);
-
-                const delta = clock.getDelta();
-                const time = Date.now() * 0.001;
-
-                // Movement
-                if (state.isLocked) {
-                    const speed = 5.0;
-
-                    state.velocity.x -= state.velocity.x * 10.0 * delta;
-                    state.velocity.z -= state.velocity.z * 10.0 * delta;
-
-                    state.direction.z = Number(state.moveForward) - Number(state.moveBackward);
-                    state.direction.x = Number(state.moveRight) - Number(state.moveLeft);
-                    state.direction.normalize();
-
-                    if (state.moveForward || state.moveBackward) {
-                        state.velocity.z -= state.direction.z * speed * delta;
+                // Block the wrong path - close the door with red wall
+                if (choice === 'left') {
+                    // Block right door
+                    if (currentCheckpoint.rightBlock) {
+                        currentCheckpoint.rightBlock.material.opacity = 0.9;
+                        currentCheckpoint.rightBlock.material.emissiveIntensity = 0.5;
                     }
-                    if (state.moveLeft || state.moveRight) {
-                        state.velocity.x += state.direction.x * speed * delta;
+                } else {
+                    // Block left door
+                    if (currentCheckpoint.leftBlock) {
+                        currentCheckpoint.leftBlock.material.opacity = 0.9;
+                        currentCheckpoint.leftBlock.material.emissiveIntensity = 0.5;
                     }
-
-                    camera.position.x += state.velocity.x * Math.cos(camera.rotation.y) - state.velocity.z * Math.sin(camera.rotation.y);
-                    camera.position.z += state.velocity.x * Math.sin(camera.rotation.y) + state.velocity.z * Math.cos(camera.rotation.y);
-
-                    camera.position.x = Math.max(-2.5, Math.min(2.5, camera.position.x));
-                    camera.position.z = Math.max(-252, Math.min(245, camera.position.z));
                 }
 
-                // Update monsters with flashlight interaction
-                for (let i = monsters.length - 1; i >= 0; i--) {
-                    const monsterGroup = monsters[i];
-                    const userData = monsterGroup.userData;
+                // Check if all 3 correct - create exit door
+                if (correctPathCount >= 3) {
+                    createExitDoor(500, 6, 10);
+                    console.log('🚪 Exit door appeared!');
+                }
+            } else {
+                console.log(`❌ Wrong choice. Progress: ${correctPathCount}/3`);
 
-                    const isHit = checkFlashlightHit(monsterGroup);
-                    const mode = modes[currentMode];
+                // Flash red
+                document.getElementById('mode-indicator').textContent = `WRONG PATH`;
+                document.getElementById('mode-indicator').style.color = '#ff0000';
 
-                    // Orange flashlight (WIDE BEAM) - Freezes red monsters
-                    if (isHit && mode.name === 'WIDE BEAM' && userData.type === 'red') {
-                        userData.frozen = true;
-                        userData.freezeTimer = 2.0; // Freeze for 2 seconds
+                setTimeout(() => {
+                    document.getElementById('mode-indicator').textContent = `MODE: ${modes[state.currentMode].name}`;
+                    document.getElementById('mode-indicator').style.color = modes[state.currentMode].colorHex;
+                }, 2000);
+
+                // Block the chosen wrong path
+                if (choice === 'left') {
+                    if (currentCheckpoint.leftBlock) {
+                        currentCheckpoint.leftBlock.material.opacity = 0.9;
+                        currentCheckpoint.leftBlock.material.emissiveIntensity = 0.5;
+                    }
+                } else {
+                    if (currentCheckpoint.rightBlock) {
+                        currentCheckpoint.rightBlock.material.opacity = 0.9;
+                        currentCheckpoint.rightBlock.material.emissiveIntensity = 0.5;
+                    }
+                }
+            }
+
+            currentCheckpoint = null;
+        }
+
+        function checkCheckpoints() {
+            // Check if player is near any checkpoint
+            for (let cp of checkpoints) {
+                if (!cp.passed && Math.abs(camera.position.z - cp.z) < 10) {
+                    if (!atCheckpoint) {
+                        atCheckpoint = true;
+                        currentCheckpoint = cp;
+                        console.log('📍 Checkpoint reached! Press Q (left) or E (right)');
+
+                        // Update UI
+                        document.getElementById('instructions').innerHTML = `
+                            CHECKPOINT!<br>
+                            Q: Choose LEFT<br>
+                            E: Choose RIGHT<br>
+                            Progress: ${correctPathCount}/3<br>
+                            <span style="color: #00ff00;">Use GREEN light to reveal EXIT</span>
+                        `;
+                    }
+                    return;
+                }
+            }
+
+            // Player left checkpoint area
+            if (atCheckpoint && currentCheckpoint && Math.abs(camera.position.z - currentCheckpoint.z) > 15) {
+                atCheckpoint = false;
+                currentCheckpoint = null;
+
+                // Reset UI
+                document.getElementById('instructions').innerHTML = `
+                    WASD: Move<br>
+                    MOUSE: Look Around<br>
+                    CLICK: Switch Mode<br>
+                    ESC: Unlock Mouse
+                `;
+            }
+        }
+
+        // ===========================
+        // UPDATE CHECKPOINT EFFECTS
+        // ===========================
+        function updateCheckpointEffects(delta) {
+            const time = Date.now() * 0.001;
+
+            checkpoints.forEach(checkpoint => {
+                // Pulse checkpoint light
+                if (checkpoint.light && !checkpoint.passed) {
+                    const pulse = Math.sin(time * 2) * 0.3 + 0.8;
+                    checkpoint.light.intensity = pulse;
+                }
+
+                // Check if green light is revealing EXIT panel
+                if (checkpoint.exitPanel && !checkpoint.passed &&
+                    state.currentMode === 1 && atCheckpoint && currentCheckpoint === checkpoint) {
+
+                    // Check if player is looking at the correct wall
+                    const distanceToPanel = checkpoint.exitPanel.position.distanceTo(camera.position);
+
+                    if (distanceToPanel < 15) { // Within reasonable viewing distance
+                        // Get direction camera is looking
+                        const cameraDirection = new THREE.Vector3(0, 0, -1);
+                        cameraDirection.applyQuaternion(camera.quaternion);
+
+                        // Get direction to EXIT panel
+                        const toPanelDirection = new THREE.Vector3();
+                        toPanelDirection.subVectors(checkpoint.exitPanel.position, camera.position);
+                        toPanelDirection.normalize();
+
+                        // Calculate angle
+                        const angle = Math.acos(cameraDirection.dot(toPanelDirection));
+
+                        // If looking at panel (within 45 degrees), reveal it
+                        if (angle < Math.PI / 4) {
+                            // Fade in EXIT panel
+                            checkpoint.exitPanel.material.opacity = Math.min(
+                                checkpoint.exitPanel.material.opacity + delta * 2,
+                                1.0
+                            );
+                        } else {
+                            // Fade out when not looking
+                            checkpoint.exitPanel.material.opacity = Math.max(
+                                checkpoint.exitPanel.material.opacity - delta * 3,
+                                0
+                            );
+                        }
+                    } else {
+                        // Fade out when too far
+                        checkpoint.exitPanel.material.opacity = Math.max(
+                            checkpoint.exitPanel.material.opacity - delta * 3,
+                            0
+                        );
+                    }
+                } else if (checkpoint.exitPanel && checkpoint.exitPanel.material.opacity > 0) {
+                    // Fade out if not at checkpoint or not using green light
+                    checkpoint.exitPanel.material.opacity = Math.max(
+                        checkpoint.exitPanel.material.opacity - delta * 3,
+                        0
+                    );
+                }
+            });
+        }
+
+        // ===========================
+        // UPDATE MOVEMENT
+        // ===========================
+        function updateMovement(delta) {
+            if (!state.isLocked || state.isGameOver) return;
+
+            const speed = 5.0;
+
+            // Store old position for collision detection
+            const oldX = camera.position.x;
+            const oldZ = camera.position.z;
+
+            // Calculate forward and right vectors based on camera rotation
+            const forward = new THREE.Vector3();
+            const right = new THREE.Vector3();
+
+            // Forward direction (where camera is looking in XZ plane)
+            forward.set(
+                -Math.sin(camera.rotation.y),
+                0,
+                -Math.cos(camera.rotation.y)
+            );
+
+            // Right direction (perpendicular to forward in XZ plane)
+            right.set(
+                Math.cos(camera.rotation.y),
+                0,
+                -Math.sin(camera.rotation.y)
+            );
+
+            // Apply movement based on WASD
+            if (state.moveForward) {
+                camera.position.x += forward.x * speed * delta;
+                camera.position.z += forward.z * speed * delta;
+            }
+            if (state.moveBackward) {
+                camera.position.x -= forward.x * speed * delta;
+                camera.position.z -= forward.z * speed * delta;
+            }
+            if (state.moveLeft) {
+                camera.position.x -= right.x * speed * delta;
+                camera.position.z -= right.z * speed * delta;
+            }
+            if (state.moveRight) {
+                camera.position.x += right.x * speed * delta;
+                camera.position.z += right.z * speed * delta;
+            }
+
+            // Collision detection and boundary checking
+            let inBranch = false;
+            let nearIntersection = false;
+
+            // Check if player is in a branch corridor
+            for (let checkpoint of checkpoints) {
+                const distToCheckpoint = Math.abs(camera.position.z - checkpoint.z);
+
+                // Check if in left branch
+                if (distToCheckpoint < 2 && camera.position.x < -3) {
+                    inBranch = true;
+                    // Constrain to left branch bounds
+                    camera.position.x = Math.max(-18, Math.min(-0.5, camera.position.x));
+                    camera.position.z = Math.max(checkpoint.z - 1.5, Math.min(checkpoint.z + 1.5, camera.position.z));
+
+                    // Check collision with branch end wall
+                    if (camera.position.x < -17.5) {
+                        camera.position.x = -17.5;
+                    }
+                    break;
+                }
+                // Check if in right branch
+                else if (distToCheckpoint < 2 && camera.position.x > 3) {
+                    inBranch = true;
+                    // Constrain to right branch bounds
+                    camera.position.x = Math.max(0.5, Math.min(18, camera.position.x));
+                    camera.position.z = Math.max(checkpoint.z - 1.5, Math.min(checkpoint.z + 1.5, camera.position.z));
+
+                    // Check collision with branch end wall
+                    if (camera.position.x > 17.5) {
+                        camera.position.x = 17.5;
+                    }
+                    break;
+                }
+                // Near intersection but not in branch
+                else if (distToCheckpoint < 5) {
+                    nearIntersection = true;
+                }
+            }
+
+            // If not in branch, apply main corridor bounds
+            if (!inBranch) {
+                if (nearIntersection) {
+                    // Allow wider movement near intersections
+                    camera.position.x = Math.max(-20, Math.min(20, camera.position.x));
+                } else {
+                    // Normal corridor width
+                    camera.position.x = Math.max(-2.5, Math.min(2.5, camera.position.x));
+                }
+
+                // Main corridor length bounds
+                camera.position.z = Math.max(-252, Math.min(245, camera.position.z));
+            }
+
+            // Check if player reached exit door (escaped)
+            if (camera.position.z < -249) {
+                state.escaped = true;
+                showEscapeScreen();
+            }
+        }
+
+        // ===========================
+        // UPDATE MONSTERS (CLUSTERS)
+        // ===========================
+        function updateMonsters(delta) {
+            const time = Date.now() * 0.001;
+            const currentMode = modes[state.currentMode];
+
+            for (let i = monsters.length - 1; i >= 0; i--) {
+                const monsterCluster = monsters[i];
+                const userData = monsterCluster.userData;
+
+                // Check if monster is hit by flashlight
+                const isHitByFlashlight = checkFlashlightHit(monsterCluster);
+
+                // Handle freeze timer
+                if (userData.frozen && userData.freezeTimer > 0) {
+                    userData.freezeTimer -= delta;
+                    if (userData.freezeTimer <= 0) {
+                        userData.frozen = false;
+                    }
+                }
+
+                // Apply flashlight effects based on mode
+                if (isHitByFlashlight) {
+                    // Mode 0: Wide Beam (Orange) - Freezes all monsters
+                    if (state.currentMode === 0) {
+                        if (!userData.frozen) {
+                            userData.frozen = true;
+                            userData.freezeTimer = 2.0; // Freeze for 2 seconds
+                            playStaticClick();
+                        }
                     }
 
-                    // Green flashlight (DETECTION) - Reveals and disintegrates green monsters
-                    if (isHit && mode.name === 'DETECTION' && userData.type === 'green') {
-                        userData.revealed = true;
+                    // Mode 1: Detection (Green) - Disintegrates green monsters
+                    else if (state.currentMode === 1 && userData.type === 'green') {
                         if (!userData.disintegrating) {
                             userData.disintegrating = true;
-                            userData.disintegrateTimer = 3.0; // Takes 3 seconds to destroy
+                            userData.disintegrateTime = time;
+                            playDetectionNoise();
                         }
                     }
+                }
 
-                    // Handle freeze timer
-                    if (userData.frozen) {
-                        userData.freezeTimer -= delta;
-                        if (userData.freezeTimer <= 0) {
-                            userData.frozen = false;
-                        }
+                // Handle disintegration
+                if (userData.disintegrating) {
+                    const disintegrateProgress = (time - userData.disintegrateTime) / 2.0; // 2 seconds to disintegrate
+                    if (disintegrateProgress >= 1.0) {
+                        // Remove completely disintegrated monster
+                        scene.remove(monsterCluster);
+                        monsters.splice(i, 1);
+                        continue;
                     }
 
-                    // Handle disintegration
-                    if (userData.disintegrating) {
-                        userData.disintegrateTimer -= delta;
-
-                        // Fade out and expand
-                        monsterGroup.children.forEach((sprite) => {
-                            sprite.material.opacity *= 0.97;
-                            sprite.scale.multiplyScalar(1.01);
-                        });
-
-                        if (userData.disintegrateTimer <= 0) {
-                            scene.remove(monsterGroup);
-                            monsters.splice(i, 1);
-                            continue;
-                        }
-                    }
-
-                    // Move towards player (only if not frozen)
-                    if (!userData.frozen && !userData.disintegrating) {
-                        const directionToPlayer = new THREE.Vector3();
-                        directionToPlayer.subVectors(camera.position, monsterGroup.position);
-                        directionToPlayer.y = 0;
-                        directionToPlayer.normalize();
-
-                        monsterGroup.position.x += directionToPlayer.x * userData.approachSpeed;
-                        monsterGroup.position.z += directionToPlayer.z * userData.approachSpeed;
-                    }
-
-                    // Rotate
-                    monsterGroup.rotation.y += userData.rotationSpeed * delta;
-
-                    // Pulse effect
-                    const pulseFactor = Math.sin(time * 1.5 + userData.pulsePhase) * 0.2;
-
-                    // Animate sprites
-                    monsterGroup.children.forEach((sprite, index) => {
-                        sprite.position.y += Math.sin(time * sprite.userData.floatSpeed + sprite.userData.floatOffset) * 0.005;
-
-                        // Different opacity handling based on state
-                        if (userData.disintegrating) {
-                            // Already handled above
-                        } else if (userData.type === 'green' && userData.revealed) {
-                            sprite.material.opacity = 0.8 + pulseFactor + Math.sin(time * 2 + index) * 0.1;
-                        } else {
-                            sprite.material.opacity = userData.baseOpacity + pulseFactor + Math.sin(time * 2 + index) * 0.1;
-                        }
+                    // Fade out and break apart
+                    monsterCluster.children.forEach((sprite, index) => {
+                        sprite.material.opacity *= (1 - disintegrateProgress);
+                        sprite.position.y += disintegrateProgress * 0.1;
                     });
+                }
 
-                    // Check collision with player
-                    const distanceToPlayer = monsterGroup.position.distanceTo(camera.position);
-                    if (distanceToPlayer < 1.5) {
-                        // Game over (monster reached player)
-                        console.log('Game Over! Monster reached you!');
+                // Move cluster slowly towards player (only if not frozen)
+                if (!userData.frozen && !userData.disintegrating) {
+                    const directionToPlayer = new THREE.Vector3();
+                    directionToPlayer.subVectors(camera.position, monsterCluster.position);
+                    directionToPlayer.y = 0; // Only move horizontally
+                    directionToPlayer.normalize();
+
+                    monsterCluster.position.x += directionToPlayer.x * userData.approachSpeed;
+                    monsterCluster.position.z += directionToPlayer.z * userData.approachSpeed;
+                }
+
+                // Slow rotation of entire cluster (slower when frozen)
+                const rotationSpeed = userData.frozen ? userData.rotationSpeed * 0.1 : userData.rotationSpeed;
+                monsterCluster.rotation.y += rotationSpeed * delta;
+
+                // Pulse opacity of entire cluster
+                const pulseFactor = Math.sin(time * 1.5 + userData.pulsePhase) * 0.2;
+
+                // Animate individual text fragments within cluster
+                monsterCluster.children.forEach((sprite, index) => {
+                    if (userData.disintegrating) return; // Skip normal animation if disintegrating
+
+                    // Individual floating motion
+                    sprite.position.y += Math.sin(time * sprite.userData.floatSpeed + sprite.userData.floatOffset) * 0.005;
+
+                    // Adjust opacity based on state
+                    let targetOpacity;
+                    if (userData.type === 'green') {
+                        // Green monsters: nearly invisible unless revealed
+                        targetOpacity = userData.revealed ? 0.8 : 0.1;
+                    } else {
+                        // Red monsters: visible, more visible when revealed
+                        targetOpacity = userData.revealed ? 1.0 : (userData.baseOpacity + pulseFactor);
                     }
+
+                    // Apply freeze effect (red tint)
+                    if (userData.frozen) {
+                        sprite.material.color.setHex(0xff0000); // Red tint when frozen
+                    } else {
+                        sprite.material.color.setHex(0xffffff); // Normal color
+                    }
+
+                    sprite.material.opacity = targetOpacity + Math.sin(time * 2 + index) * 0.1;
+
+                    // Slight rotation for each fragment
+                    sprite.rotation.z = Math.sin(time * 0.5 + index) * 0.1;
+                });
+
+                // Check if monster hits player
+                const distanceToPlayer = monsterCluster.position.distanceTo(camera.position);
+                if (distanceToPlayer < 2) {
+                    // Monster hit the player!
+                    const currentTime = Date.now() * 0.001;
+                    if (currentTime - state.lastHitTime > state.invulnerableTime) {
+                        playerHit();
+                        state.lastHitTime = currentTime;
+                    }
+                    // Remove monster after hit
+                    scene.remove(monsterCluster);
+                    monsters.splice(i, 1);
+                    continue;
+                }
+
+                // Remove if too far
+                if (distanceToPlayer > 500) {
+                    scene.remove(monsterCluster);
+                    monsters.splice(i, 1);
+                }
+            }
+        }
+
+        // ===========================
+        // CHECK FLASHLIGHT HIT
+        // ===========================
+        function checkFlashlightHit(monsterCluster) {
+            // Get monster position relative to camera
+            const monsterPos = new THREE.Vector3();
+            monsterPos.copy(monsterCluster.position);
+
+            // Transform to camera space
+            const cameraToMonster = new THREE.Vector3();
+            cameraToMonster.subVectors(monsterPos, camera.position);
+
+            // Get distance
+            const distance = cameraToMonster.length();
+
+            // Get current mode settings
+            const mode = modes[state.currentMode];
+
+            // Check if within flashlight distance
+            if (distance > mode.distance) return false;
+
+            // Get direction camera is looking
+            const cameraDirection = new THREE.Vector3(0, 0, -1);
+            cameraDirection.applyQuaternion(camera.quaternion);
+
+            // Calculate angle between camera direction and monster direction
+            cameraToMonster.normalize();
+            const angle = Math.acos(cameraDirection.dot(cameraToMonster));
+
+            // Check if within spotlight cone angle
+            return angle < mode.angle;
+        }
+
+        // ===========================
+        // AUDIO FEEDBACK
+        // ===========================
+        function playStaticClick() {
+            // Simple click sound feedback
+            if (state.audioContext) {
+                const oscillator = state.audioContext.createOscillator();
+                const gainNode = state.audioContext.createGain();
+                oscillator.frequency.value = 800;
+                oscillator.type = 'square';
+                gainNode.gain.setValueAtTime(0.1, state.audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, state.audioContext.currentTime + 0.1);
+                oscillator.connect(gainNode);
+                gainNode.connect(state.audioContext.destination);
+                oscillator.start();
+                oscillator.stop(state.audioContext.currentTime + 0.1);
+            }
+        }
+
+        function playDetectionNoise() {
+            // Detection sound feedback
+            if (state.audioContext) {
+                const oscillator = state.audioContext.createOscillator();
+                const gainNode = state.audioContext.createGain();
+                oscillator.frequency.value = 1200;
+                oscillator.type = 'sine';
+                gainNode.gain.setValueAtTime(0.15, state.audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, state.audioContext.currentTime + 0.2);
+                oscillator.connect(gainNode);
+                gainNode.connect(state.audioContext.destination);
+                oscillator.start();
+                oscillator.stop(state.audioContext.currentTime + 0.2);
+            }
+        }
+
+        // Initialize audio context
+        function initAudio() {
+            try {
+                state.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            } catch (e) {
+                console.warn('Web Audio API not supported');
+            }
+        }
+
+        // ===========================
+        // PLAYER HIT & DAMAGE SYSTEM
+        // ===========================
+        function playerHit() {
+            if (state.isGameOver) return;
+
+            state.hitCount++;
+            console.log(`Hit! Count: ${state.hitCount}/${state.maxHits}`);
+
+            // Trigger hit effect
+            triggerHitEffect();
+
+            // Update BUG invasion UI
+            updateBugInvasion();
+
+            // Play hit sound
+            playHitSound();
+
+            // Check for game over
+            if (state.hitCount >= state.maxHits) {
+                triggerGameOver();
+            }
+        }
+
+        // Trigger visual hit effect
+        function triggerHitEffect() {
+            const hitFlash = document.getElementById('hit-flash');
+
+            // Flash red
+            hitFlash.classList.add('flash-hit');
+            setTimeout(() => {
+                hitFlash.classList.remove('flash-hit');
+            }, 200);
+
+            // Camera shake effect
+            const originalY = camera.rotation.y;
+            const originalX = camera.rotation.x;
+            const shakeAmount = 0.1;
+
+            // Quick shake
+            camera.rotation.x += (Math.random() - 0.5) * shakeAmount;
+            camera.rotation.y += (Math.random() - 0.5) * shakeAmount;
+
+            setTimeout(() => {
+                camera.rotation.x = originalX;
+                camera.rotation.y = originalY;
+            }, 100);
+        }
+
+        // Update BUG text invasion - random scattered all over edges
+        function updateBugInvasion() {
+            const container = document.getElementById('bug-invasion');
+
+            // Calculate how many BUGs to add (exponential growth)
+            // Hit 1: 15 bugs, Hit 2: 30 bugs, ..., Hit 10: 150 bugs total
+            const totalBugs = state.hitCount * 15;
+
+            // Remove existing bugs
+            container.innerHTML = '';
+
+            // Generate random BUG texts all over the screen edges
+            for (let i = 0; i < totalBugs; i++) {
+                const bugElement = document.createElement('div');
+                bugElement.className = 'bug-text';
+                bugElement.textContent = 'BUG';
+
+                // Random font size (10px - 30px)
+                const fontSize = 10 + Math.random() * 20;
+                bugElement.style.fontSize = fontSize + 'px';
+
+                // Random rotation (-30deg to 30deg)
+                const rotation = (Math.random() - 0.5) * 60;
+                bugElement.style.transform = `rotate(${rotation}deg)`;
+
+                // Decide which edge to place it on
+                const edge = Math.floor(Math.random() * 4); // 0=top, 1=right, 2=bottom, 3=left
+
+                // Progress factor: how far into the screen bugs should penetrate
+                // 0 at hit 0, 1.0 at hit 10
+                const penetration = (state.hitCount / state.maxHits);
+
+                let x, y;
+
+                if (edge === 0) {
+                    // Top edge
+                    x = Math.random() * 100; // 0-100%
+                    y = Math.random() * 40 * penetration; // Penetrate into screen
+                    bugElement.style.left = x + '%';
+                    bugElement.style.top = y + '%';
+                } else if (edge === 1) {
+                    // Right edge
+                    x = 100 - Math.random() * 40 * penetration;
+                    y = Math.random() * 100;
+                    bugElement.style.left = x + '%';
+                    bugElement.style.top = y + '%';
+                } else if (edge === 2) {
+                    // Bottom edge
+                    x = Math.random() * 100;
+                    y = 100 - Math.random() * 40 * penetration;
+                    bugElement.style.left = x + '%';
+                    bugElement.style.top = y + '%';
+                } else {
+                    // Left edge
+                    x = Math.random() * 40 * penetration;
+                    y = Math.random() * 100;
+                    bugElement.style.left = x + '%';
+                    bugElement.style.top = y + '%';
                 }
 
                 // === UPDATE DOORS ===
@@ -717,15 +2025,165 @@
 
                 renderer.render(scene, camera);
             }
-
-            animate();
-
-            window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            });
         }
+
+        // Play hit sound
+        function playHitSound() {
+            if (!state.audioContext) return;
+
+            // Harsh alarm sound
+            const oscillator = state.audioContext.createOscillator();
+            const gainNode = state.audioContext.createGain();
+
+            oscillator.type = 'sawtooth';
+            oscillator.frequency.setValueAtTime(200, state.audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(100, state.audioContext.currentTime + 0.3);
+
+            gainNode.gain.setValueAtTime(0.3, state.audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, state.audioContext.currentTime + 0.3);
+
+            oscillator.connect(gainNode);
+            gainNode.connect(state.audioContext.destination);
+
+            oscillator.start();
+            oscillator.stop(state.audioContext.currentTime + 0.3);
+        }
+
+        // Trigger game over
+        function triggerGameOver() {
+            state.isGameOver = true;
+
+            // Show game over screen
+            document.getElementById('game-over').classList.add('show');
+
+            // Release pointer lock
+            document.exitPointerLock();
+
+            // Play game over sound
+            playGameOverSound();
+        }
+
+        // Show escape success screen
+        function showEscapeScreen() {
+            if (state.isGameOver) return; // Don't override game over
+
+            console.log('🎉 ESCAPED - You found the EXIT!');
+
+            // Show escape success screen
+            document.getElementById('escape-screen').classList.add('show');
+
+            // Release pointer lock
+            document.exitPointerLock();
+
+            // Play success sound
+            playEscapeSound();
+        }
+
+        // Play game over sound
+        function playGameOverSound() {
+            if (!state.audioContext) return;
+
+            // Dramatic descending tone
+            const oscillator = state.audioContext.createOscillator();
+            const gainNode = state.audioContext.createGain();
+
+            oscillator.type = 'square';
+            oscillator.frequency.setValueAtTime(800, state.audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(100, state.audioContext.currentTime + 1.5);
+
+            gainNode.gain.setValueAtTime(0.4, state.audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, state.audioContext.currentTime + 1.5);
+
+            oscillator.connect(gainNode);
+            gainNode.connect(state.audioContext.destination);
+
+            oscillator.start();
+            oscillator.stop(state.audioContext.currentTime + 1.5);
+        }
+
+        // Play escape success sound
+        function playEscapeSound() {
+            if (!state.audioContext) return;
+
+            // Triumphant ascending tone
+            const oscillator = state.audioContext.createOscillator();
+            const gainNode = state.audioContext.createGain();
+
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(200, state.audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(800, state.audioContext.currentTime + 0.8);
+
+            gainNode.gain.setValueAtTime(0.3, state.audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, state.audioContext.currentTime + 0.8);
+
+            oscillator.connect(gainNode);
+            gainNode.connect(state.audioContext.destination);
+
+            oscillator.start();
+            oscillator.stop(state.audioContext.currentTime + 0.8);
+        }
+
+        // ===========================
+        // ANIMATION LOOP
+        // ===========================
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const delta = clock.getDelta();
+
+            // Stop updates if game over or escaped
+            if (!state.isGameOver && !state.escaped) {
+                updateMovement(delta);
+                updateMonsters(delta);
+                checkCheckpoints(); // Check if player is at a checkpoint
+                updateCheckpointEffects(delta); // Update checkpoint lights and EXIT panels
+            }
+
+            // Animate flowing text like code stream
+            const time = Date.now() * 0.001;
+            if (wallTextures.length >= 4) {
+                // Right and left walls: flow along corridor (faster)
+                wallTextures[0].offset.x = (time * 0.25) % 1; // Right wall - faster flow
+                wallTextures[1].offset.x = (time * 0.25) % 1; // Left wall
+                wallTextures[0].needsUpdate = true;
+                wallTextures[1].needsUpdate = true;
+
+                // Ceiling and floor: flow horizontally (faster)
+                wallTextures[2].offset.y = (time * 0.35) % 1; // Ceiling
+                wallTextures[3].offset.y = (time * 0.35) % 1; // Floor
+                wallTextures[2].needsUpdate = true;
+                wallTextures[3].needsUpdate = true;
+            }
+
+            // Random flicker
+            if (Math.random() > 0.995) {
+                const mode = modes[state.currentMode];
+                spotlight.intensity = mode.intensity * 0.7;
+                setTimeout(() => {
+                    spotlight.intensity = mode.intensity;
+                }, 100);
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // ===========================
+        // WINDOW RESIZE
+        // ===========================
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // ===========================
+        // INITIALIZE
+        // ===========================
+        window.addEventListener('load', () => {
+            console.log('🔦 3D Corridor Flashlight Loading...');
+            init();
+            console.log('✅ 3D Scene Ready!');
+        });
     </script>
 </body>
 </html>
