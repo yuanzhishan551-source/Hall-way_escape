@@ -1591,11 +1591,13 @@
                 }
 
                 // Main corridor length bounds
-                camera.position.z = Math.max(-252, Math.min(245, camera.position.z));
+                // Only limit forward movement (z=245), allow infinite backward movement
+                camera.position.z = Math.min(245, camera.position.z);
             }
 
             // Check if player reached exit door (escaped)
-            if (camera.position.z < -249) {
+            // Exit door appears at z=-250 after 3 correct choices
+            if (camera.position.z < -249 && correctPathCount >= 3) {
                 state.escaped = true;
                 showEscapeScreen();
             }
