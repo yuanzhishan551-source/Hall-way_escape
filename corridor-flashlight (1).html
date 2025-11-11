@@ -966,7 +966,7 @@
             checkpoint.rightBlock = rightBlock;
 
             // Generate wall segment from last wall end to this checkpoint's opening
-            const openingHalfWidth = 12; // Half-width of the intersection opening
+            const openingHalfWidth = 2; // Smaller opening, branch corridors are only 3m wide
             const wallStartZ = lastWallEndZ;
             const wallEndZ = checkpoint.z + openingHalfWidth;
 
@@ -975,6 +975,75 @@
                 const baseTexture = createTextTexture(wallText);
                 createWallSegment(wallStartZ, wallEndZ, baseTexture);
             }
+
+            // Create short side walls at intersection (connecting main corridor to branch entrances)
+            const sideWallTexture = createTextTexture(wallText);
+            sideWallTexture.wrapS = THREE.RepeatWrapping;
+            sideWallTexture.wrapT = THREE.RepeatWrapping;
+            sideWallTexture.repeat.set(0.3, 2);
+            sideWallTexture.needsUpdate = true;
+
+            // Front short walls (at checkpoint.z + branchWidth/2)
+            const frontSideWallZ = checkpoint.z + branchWidth / 2;
+
+            // Left front short wall (from x=-3 to x=-0.5)
+            const leftFrontShortWall = new THREE.Mesh(
+                new THREE.PlaneGeometry(2.5, 10),
+                new THREE.MeshStandardMaterial({
+                    map: sideWallTexture.clone(),
+                    side: THREE.DoubleSide,
+                    emissive: 0x555555,
+                    emissiveMap: sideWallTexture.clone(),
+                    emissiveIntensity: 0.8
+                })
+            );
+            leftFrontShortWall.position.set(-1.75, 0, frontSideWallZ);
+            scene.add(leftFrontShortWall);
+
+            // Right front short wall (from x=0.5 to x=3)
+            const rightFrontShortWall = new THREE.Mesh(
+                new THREE.PlaneGeometry(2.5, 10),
+                new THREE.MeshStandardMaterial({
+                    map: sideWallTexture.clone(),
+                    side: THREE.DoubleSide,
+                    emissive: 0x555555,
+                    emissiveMap: sideWallTexture.clone(),
+                    emissiveIntensity: 0.8
+                })
+            );
+            rightFrontShortWall.position.set(1.75, 0, frontSideWallZ);
+            scene.add(rightFrontShortWall);
+
+            // Back short walls (at checkpoint.z - branchWidth/2)
+            const backSideWallZ = checkpoint.z - branchWidth / 2;
+
+            // Left back short wall
+            const leftBackShortWall = new THREE.Mesh(
+                new THREE.PlaneGeometry(2.5, 10),
+                new THREE.MeshStandardMaterial({
+                    map: sideWallTexture.clone(),
+                    side: THREE.DoubleSide,
+                    emissive: 0x555555,
+                    emissiveMap: sideWallTexture.clone(),
+                    emissiveIntensity: 0.8
+                })
+            );
+            leftBackShortWall.position.set(-1.75, 0, backSideWallZ);
+            scene.add(leftBackShortWall);
+
+            // Right back short wall
+            const rightBackShortWall = new THREE.Mesh(
+                new THREE.PlaneGeometry(2.5, 10),
+                new THREE.MeshStandardMaterial({
+                    map: sideWallTexture.clone(),
+                    side: THREE.DoubleSide,
+                    emissive: 0x555555,
+                    emissiveMap: sideWallTexture.clone(),
+                    emissiveIntensity: 0.8
+                })
+            );
+            rightBackShortWall.position.set(1.75, 0, backSideWallZ);
+            scene.add(rightBackShortWall);
 
             // Update last wall end position to after this checkpoint
             lastWallEndZ = checkpoint.z - openingHalfWidth;
