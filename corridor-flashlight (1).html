@@ -328,6 +328,7 @@
         let currentCheckpoint = null;
         let atCheckpoint = false;
         let exitRevealed = false; // Track if exit is revealed by green light
+        let lastWallEndZ = 80; // Track where the last wall segment ended
 
         function init() {
             // Scene
@@ -507,61 +508,9 @@
             ceiling.position.y = 5;
             scene.add(ceiling);
 
-            // Create segmented walls with openings at intersections
-            // Build walls in segments between intersections
-            const segments = [
-                { start: 250, end: 120 },   // Before first intersection
-                { start: 96, end: 20 },     // Between 1st and 2nd intersection
-                { start: -4, end: -80 },    // Between 2nd and 3rd intersection
-                { start: -104, end: -250 }  // After last intersection
-            ];
-
-            segments.forEach(segment => {
-                const segmentLength = Math.abs(segment.end - segment.start);
-                const segmentCenter = (segment.start + segment.end) / 2;
-
-                // Right wall segment
-                const rightWallTexture = textTexture.clone();
-                rightWallTexture.wrapS = THREE.RepeatWrapping;
-                rightWallTexture.wrapT = THREE.RepeatWrapping;
-                rightWallTexture.repeat.set(segmentLength / 10, 2);
-                rightWallTexture.needsUpdate = true;
-                wallTextures.push(rightWallTexture);
-
-                const rightWallGeometry = new THREE.PlaneGeometry(segmentLength, corridorHeight);
-                const rightWallMaterial = new THREE.MeshStandardMaterial({
-                    map: rightWallTexture,
-                    side: THREE.DoubleSide,
-                    emissive: 0x555555,
-                    emissiveMap: rightWallTexture,
-                    emissiveIntensity: 0.8
-                });
-                const rightWall = new THREE.Mesh(rightWallGeometry, rightWallMaterial);
-                rightWall.position.set(3, 0, segmentCenter);
-                rightWall.rotation.y = -Math.PI / 2;
-                scene.add(rightWall);
-
-                // Left wall segment
-                const leftWallTexture = textTexture.clone();
-                leftWallTexture.wrapS = THREE.RepeatWrapping;
-                leftWallTexture.wrapT = THREE.RepeatWrapping;
-                leftWallTexture.repeat.set(segmentLength / 10, 2);
-                leftWallTexture.needsUpdate = true;
-                wallTextures.push(leftWallTexture);
-
-                const leftWallGeometry = new THREE.PlaneGeometry(segmentLength, corridorHeight);
-                const leftWallMaterial = new THREE.MeshStandardMaterial({
-                    map: leftWallTexture,
-                    side: THREE.DoubleSide,
-                    emissive: 0x555555,
-                    emissiveMap: leftWallTexture,
-                    emissiveIntensity: 0.8
-                });
-                const leftWall = new THREE.Mesh(leftWallGeometry, leftWallMaterial);
-                leftWall.position.set(-3, 0, segmentCenter);
-                leftWall.rotation.y = -Math.PI / 2;
-                scene.add(leftWall);
-            });
+            // Initial wall segment from start to first checkpoint area
+            const initialSegment = { start: 250, end: 80 };
+            createWallSegment(initialSegment.start, initialSegment.end, textTexture);
 
             // Front wall (end of corridor)
             const frontWallTexture = textTexture.clone();
@@ -610,6 +559,57 @@
             generateCheckpoint();
             generateCheckpoint();
             generateCheckpoint();
+        }
+
+        // ===========================
+        // CREATE WALL SEGMENT
+        // ===========================
+        function createWallSegment(startZ, endZ, baseTexture) {
+            const corridorHeight = 10;
+            const segmentLength = Math.abs(endZ - startZ);
+            const segmentCenter = (startZ + endZ) / 2;
+
+            // Right wall segment
+            const rightWallTexture = baseTexture.clone();
+            rightWallTexture.wrapS = THREE.RepeatWrapping;
+            rightWallTexture.wrapT = THREE.RepeatWrapping;
+            rightWallTexture.repeat.set(segmentLength / 10, 2);
+            rightWallTexture.needsUpdate = true;
+            wallTextures.push(rightWallTexture);
+
+            const rightWallGeometry = new THREE.PlaneGeometry(segmentLength, corridorHeight);
+            const rightWallMaterial = new THREE.MeshStandardMaterial({
+                map: rightWallTexture,
+                side: THREE.DoubleSide,
+                emissive: 0x555555,
+                emissiveMap: rightWallTexture,
+                emissiveIntensity: 0.8
+            });
+            const rightWall = new THREE.Mesh(rightWallGeometry, rightWallMaterial);
+            rightWall.position.set(3, 0, segmentCenter);
+            rightWall.rotation.y = -Math.PI / 2;
+            scene.add(rightWall);
+
+            // Left wall segment
+            const leftWallTexture = baseTexture.clone();
+            leftWallTexture.wrapS = THREE.RepeatWrapping;
+            leftWallTexture.wrapT = THREE.RepeatWrapping;
+            leftWallTexture.repeat.set(segmentLength / 10, 2);
+            leftWallTexture.needsUpdate = true;
+            wallTextures.push(leftWallTexture);
+
+            const leftWallGeometry = new THREE.PlaneGeometry(segmentLength, corridorHeight);
+            const leftWallMaterial = new THREE.MeshStandardMaterial({
+                map: leftWallTexture,
+                side: THREE.DoubleSide,
+                emissive: 0x555555,
+                emissiveMap: leftWallTexture,
+                emissiveIntensity: 0.8
+            });
+            const leftWall = new THREE.Mesh(leftWallGeometry, leftWallMaterial);
+            leftWall.position.set(-3, 0, segmentCenter);
+            leftWall.rotation.y = -Math.PI / 2;
+            scene.add(leftWall);
         }
 
         // ===========================
@@ -964,6 +964,20 @@
             rightBlock.rotation.y = -Math.PI / 2;
             scene.add(rightBlock);
             checkpoint.rightBlock = rightBlock;
+
+            // Generate wall segment from last wall end to this checkpoint's opening
+            const openingHalfWidth = 12; // Half-width of the intersection opening
+            const wallStartZ = lastWallEndZ;
+            const wallEndZ = checkpoint.z + openingHalfWidth;
+
+            if (wallStartZ > wallEndZ) {
+                // Create wall segment before this checkpoint
+                const baseTexture = createTextTexture(wallText);
+                createWallSegment(wallStartZ, wallEndZ, baseTexture);
+            }
+
+            // Update last wall end position to after this checkpoint
+            lastWallEndZ = checkpoint.z - openingHalfWidth;
 
             // Add checkpoint to array and update next position
             checkpoints.push(checkpoint);
