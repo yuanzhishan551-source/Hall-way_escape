@@ -619,18 +619,25 @@
             const rotX = -Math.PI / 2;
             const rotY = Math.PI / 2;
 
-            // Floor with hole at the end (first 12m has floor, last 3m no floor = fall zone)
-            const floorWithHole = createPlane(12, 3, createTexture(sharedWallTexture, 4, 1), centerX + (endX > 0 ? 1.5 : -1.5), -5, z, rotX);
-            group.add(floorWithHole);
+            // Floor with hole at the end (12m floor + 3m hole)
+            // Left branch: floor from X=-3 to X=-15 (center at -9), hole from -15 to -18
+            // Right branch: floor from X=3 to X=15 (center at 9), hole from 15 to 18
+            const floorCenterX = endX > 0 ? 9 : -9; // Shifted toward entrance
+            const floor = createPlane(12, 3, createTexture(sharedWallTexture, 4, 1), floorCenterX, -5, z, rotX);
+            group.add(floor);
 
             // Full Ceiling (covers entire 15m)
             group.add(createPlane(15, 3, createTexture(sharedWallTexture, 5, 1), centerX, 5, z, rotX));
 
-            // Front & Back walls
-            group.add(createPlane(15, 10, createTexture(sharedWallTexture, 5, 2), centerX, 0, z - 1.5));
-            group.add(createPlane(15, 10, createTexture(sharedWallTexture, 5, 2), centerX, 0, z + 1.5));
+            // Front & Back walls (shortened to avoid overlap with connector walls)
+            // Only cover branch area: X from -18 to -3.5 (left) or 3.5 to 18 (right)
+            const wallLength = 14.5; // 15m - 0.5m gap
+            const wallCenterX = endX > 0 ? 10.75 : -10.75; // Shifted away from center
+            group.add(createPlane(wallLength, 10, createTexture(sharedWallTexture, 5, 2), wallCenterX, 0, z - 1.5));
+            group.add(createPlane(wallLength, 10, createTexture(sharedWallTexture, 5, 2), wallCenterX, 0, z + 1.5));
 
-            // No end wall - open for falling
+            // End wall (at the dead end where the hole is)
+            group.add(createPlane(3, 10, createTexture(sharedWallTexture, 1, 2), endX, 0, z, 0, rotY));
 
             scene.add(group);
             return group;
@@ -655,62 +662,7 @@
 
             const index = checkpoints.length;
 
-            // Create floor marker with arrows indicating direction
-            const markerCanvas = document.createElement('canvas');
-            markerCanvas.width = 512;
-            markerCanvas.height = 512;
-            const ctx = markerCanvas.getContext('2d');
-
-            // Yellow glowing circle
-            ctx.fillStyle = '#ffaa00';
-            ctx.shadowBlur = 20;
-            ctx.shadowColor = '#ffaa00';
-            ctx.beginPath();
-            ctx.arc(256, 256, 180, 0, Math.PI * 2);
-            ctx.fill();
-
-            // White inner circle
-            ctx.fillStyle = '#ffffff';
-            ctx.shadowBlur = 0;
-            ctx.beginPath();
-            ctx.arc(256, 256, 150, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Black text with checkpoint number
-            ctx.fillStyle = '#000000';
-            ctx.font = 'bold 120px monospace';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(`${index + 1}`, 256, 220);
-
-            // Arrows indicating left/right choice
-            ctx.font = 'bold 60px monospace';
-            ctx.fillText('Q←  →E', 256, 320);
-
-            const markerTexture = new THREE.CanvasTexture(markerCanvas);
-            markerTexture.magFilter = THREE.NearestFilter;
-            markerTexture.minFilter = THREE.NearestFilter;
-
-            const markerGeometry = new THREE.PlaneGeometry(3, 3);
-            const markerMaterial = new THREE.MeshStandardMaterial({
-                map: markerTexture,
-                transparent: true,
-                emissive: 0xffaa00,
-                emissiveIntensity: 0.5
-            });
-
-            const marker = new THREE.Mesh(markerGeometry, markerMaterial);
-            marker.rotation.x = -Math.PI / 2; // Lay flat on floor
-            marker.position.set(0, 0.01, checkpoint.z); // Slightly above floor to prevent z-fighting
-            scene.add(marker);
-
-            // Add pulsing light at checkpoint
-            const checkpointLight = new THREE.PointLight(0xffaa00, 0.8, 10);
-            checkpointLight.position.set(0, 2, checkpoint.z);
-            scene.add(checkpointLight);
-
-            // Store light reference for animation
-            checkpoint.light = checkpointLight;
+            // No visual marker - player must find the intersection naturally
 
             // Create EXIT text panel on correct wall (initially invisible)
             const exitCanvas = document.createElement('canvas');
@@ -1199,12 +1151,6 @@
             const time = Date.now() * 0.001;
 
             checkpoints.forEach(checkpoint => {
-                // Pulse checkpoint light
-                if (checkpoint.light && !checkpoint.passed) {
-                    const pulse = Math.sin(time * 2) * 0.3 + 0.8;
-                    checkpoint.light.intensity = pulse;
-                }
-
                 // Check if green light is revealing EXIT panel
                 if (checkpoint.exitPanel && !checkpoint.passed &&
                     state.currentMode === 1 && atCheckpoint && currentCheckpoint === checkpoint) {
@@ -1414,7 +1360,6 @@
         function handleTeleport() {
             // Clean up all current checkpoints and their geometry
             checkpoints.forEach(checkpoint => {
-                if (checkpoint.light) scene.remove(checkpoint.light);
                 if (checkpoint.exitPanel) scene.remove(checkpoint.exitPanel);
                 if (checkpoint.leftDoor) scene.remove(checkpoint.leftDoor);
                 if (checkpoint.rightDoor) scene.remove(checkpoint.rightDoor);
