@@ -629,19 +629,15 @@
             // Full Ceiling (covers entire 15m)
             group.add(createPlane(15, 3, createTexture(sharedWallTexture, 5, 1), centerX, 5, z, rotX));
 
-            // Front & Back walls - shifted 100px (1m) away from main corridor
-            // Left branch: walls at Z offset by -1m (back) and +1m (front) from intersection
-            // Right branch: same Z offset
+            // Front & Back walls - back to original position
             const wallLength = 15; // Full length
             const wallCenterX = endX > 0 ? 10.5 : -10.5;
 
-            // Back wall - shifted further back (away from player's approach)
-            const backWallZ = endX > 0 ? z - 2.5 : z - 2.5; // 1m extra shift
-            group.add(createPlane(wallLength, 10, createTexture(sharedWallTexture, 5, 2), wallCenterX, 0, backWallZ));
+            // Back wall - original position
+            group.add(createPlane(wallLength, 10, createTexture(sharedWallTexture, 5, 2), wallCenterX, 0, z - 1.5));
 
-            // Front wall - shifted further forward
-            const frontWallZ = endX > 0 ? z + 2.5 : z + 2.5; // 1m extra shift
-            group.add(createPlane(wallLength, 10, createTexture(sharedWallTexture, 5, 2), wallCenterX, 0, frontWallZ));
+            // Front wall - original position
+            group.add(createPlane(wallLength, 10, createTexture(sharedWallTexture, 5, 2), wallCenterX, 0, z + 1.5));
 
             // End wall (at the dead end where the hole is)
             group.add(createPlane(3, 10, createTexture(sharedWallTexture, 1, 2), endX, 0, z, 0, rotY));
@@ -768,20 +764,7 @@
             checkpoint.backWall = createPlane(6, 10, endWallTex, 0, 0, endWallZ);
             scene.add(checkpoint.backWall);
 
-            // Create small connector walls at front of intersection (where branches start)
-            const frontWallZ = checkpoint.z + 1.5;
-            const frontTex = createTexture(sharedWallTexture, 0.3, 2);
-            checkpoint.connectorWalls = [];
-            // Left side connector (x=-3 to x=-0.5)
-            const leftConnector = createPlane(2.5, 10, frontTex, -1.75, 0, frontWallZ);
-            scene.add(leftConnector);
-            checkpoint.connectorWalls.push(leftConnector);
-            // Right side connector (x=0.5 to x=3)
-            const rightConnector = createPlane(2.5, 10, createTexture(sharedWallTexture, 0.3, 2), 1.75, 0, frontWallZ);
-            scene.add(rightConnector);
-            checkpoint.connectorWalls.push(rightConnector);
-
-            // Main corridor ends here - player must choose left or right branch
+            // No front connector walls - branches connect directly to main corridor
 
             // Add checkpoint to array and update next position
             checkpoints.push(checkpoint);
@@ -1385,9 +1368,6 @@
                 if (checkpoint.leftBlock) scene.remove(checkpoint.leftBlock);
                 if (checkpoint.rightBlock) scene.remove(checkpoint.rightBlock);
                 if (checkpoint.backWall) scene.remove(checkpoint.backWall);
-                if (checkpoint.connectorWalls) {
-                    checkpoint.connectorWalls.forEach(wall => scene.remove(wall));
-                }
             });
             checkpoints = [];
 
