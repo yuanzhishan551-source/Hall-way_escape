@@ -277,6 +277,8 @@
             maxHits: 10,
             isGameOver: false,
             escaped: false,
+            velocityY: 0,  // Vertical velocity for falling
+            isGrounded: true,  // Whether player is on ground
             lastHitTime: 0,
             invulnerableTime: 1.0 // 1 second invulnerability after hit
         };
@@ -560,9 +562,7 @@
             // Exit door will be created after 3 correct choices
             // createExitDoor(500, 6, 10);
 
-            // Generate initial checkpoints
-            generateCheckpoint();
-            generateCheckpoint();
+            // Generate initial checkpoint (only one per segment)
             generateCheckpoint();
         }
 
@@ -619,16 +619,18 @@
             const rotX = -Math.PI / 2;
             const rotY = Math.PI / 2;
 
-            // Floor & Ceiling
-            group.add(createPlane(15, 3, createTexture(sharedWallTexture, 5, 1), centerX, -5, z, rotX));
+            // Floor with hole at the end (first 12m has floor, last 3m no floor = fall zone)
+            const floorWithHole = createPlane(12, 3, createTexture(sharedWallTexture, 4, 1), centerX + (endX > 0 ? 1.5 : -1.5), -5, z, rotX);
+            group.add(floorWithHole);
+
+            // Full Ceiling (covers entire 15m)
             group.add(createPlane(15, 3, createTexture(sharedWallTexture, 5, 1), centerX, 5, z, rotX));
 
             // Front & Back walls
             group.add(createPlane(15, 10, createTexture(sharedWallTexture, 5, 2), centerX, 0, z - 1.5));
             group.add(createPlane(15, 10, createTexture(sharedWallTexture, 5, 2), centerX, 0, z + 1.5));
 
-            // End wall
-            group.add(createPlane(3, 10, createTexture(sharedWallTexture, 1, 2), endX, 0, z, 0, rotY));
+            // No end wall - open for falling
 
             scene.add(group);
             return group;
@@ -790,26 +792,25 @@
             scene.add(rightBlock);
             checkpoint.rightBlock = rightBlock;
 
-            // Generate wall segment from last wall end to this checkpoint's opening
-            const openingHalfWidth = 1.5; // Match branchWidth / 2
+            // Generate wall segment from last wall end to this checkpoint
+            const openingHalfWidth = 1.5;
             const wallStartZ = lastWallEndZ;
             const wallEndZ = checkpoint.z + openingHalfWidth;
 
             if (wallStartZ > wallEndZ) {
-                // Create wall segment before this checkpoint (reuse shared texture)
+                // Create wall segment before this checkpoint
                 createWallSegment(wallStartZ, wallEndZ, sharedWallTexture);
             }
 
             // Create connecting walls in main corridor area
-            const branchWidth = 3;
             const tex = createTexture(sharedWallTexture, 0.3, 2);
             [checkpoint.z + 1.5, checkpoint.z - 1.5].forEach(z => {
                 scene.add(createPlane(2.5, 10, tex, -1.75, 0, z));
                 scene.add(createPlane(2.5, 10, createTexture(sharedWallTexture, 0.3, 2), 1.75, 0, z));
             });
 
-            // Update last wall end position to after this checkpoint
-            lastWallEndZ = checkpoint.z - openingHalfWidth;
+            // STOP here - no more corridor after checkpoint (player must choose left or right)
+            // Main corridor ends at this checkpoint
 
             // Add checkpoint to array and update next position
             checkpoints.push(checkpoint);
@@ -1262,10 +1263,12 @@
             if (!state.isLocked || state.isGameOver) return;
 
             const speed = 5.0;
+            const gravity = -20.0; // Gravity acceleration
 
             // Store old position for collision detection
             const oldX = camera.position.x;
             const oldZ = camera.position.z;
+            const oldY = camera.position.y;
 
             // Calculate forward and right vectors based on camera rotation
             const forward = new THREE.Vector3();
@@ -1358,12 +1361,94 @@
                 camera.position.z = Math.min(245, camera.position.z);
             }
 
+            // Apply gravity and check for ground
+            const groundLevel = 0; // Normal floor height
+            let hasFloor = true;
+
+            // Check if player is in fall zone (at end of branch corridor)
+            for (let checkpoint of checkpoints) {
+                const distToCheckpoint = Math.abs(camera.position.z - checkpoint.z);
+
+                // If in left branch fall zone
+                if (distToCheckpoint < 2 && camera.position.x < -15) {
+                    hasFloor = false;
+                    break;
+                }
+                // If in right branch fall zone
+                else if (distToCheckpoint < 2 && camera.position.x > 15) {
+                    hasFloor = false;
+                    break;
+                }
+            }
+
+            if (hasFloor) {
+                // Player is on solid ground
+                if (camera.position.y < groundLevel) {
+                    camera.position.y = groundLevel;
+                    state.velocityY = 0;
+                    state.isGrounded = true;
+                }
+            } else {
+                // Player is falling
+                state.isGrounded = false;
+                state.velocityY += gravity * delta;
+                camera.position.y += state.velocityY * delta;
+            }
+
+            // Check if player is falling (Y < -15 means fell through hole)
+            if (camera.position.y < -15) {
+                handleTeleport();
+            }
+
             // Check if player reached exit door (escaped)
             // Exit door appears at z=-250 after 3 correct choices
             if (camera.position.z < -249 && correctPathCount >= 3) {
                 state.escaped = true;
                 showEscapeScreen();
             }
+        }
+
+        // ===========================
+        // HANDLE TELEPORT AFTER FALLING
+        // ===========================
+        function handleTeleport() {
+            // Clean up all current checkpoints and their geometry
+            checkpoints.forEach(checkpoint => {
+                if (checkpoint.light) scene.remove(checkpoint.light);
+                if (checkpoint.exitPanel) scene.remove(checkpoint.exitPanel);
+                if (checkpoint.leftDoor) scene.remove(checkpoint.leftDoor);
+                if (checkpoint.rightDoor) scene.remove(checkpoint.rightDoor);
+                if (checkpoint.leftBlock) scene.remove(checkpoint.leftBlock);
+                if (checkpoint.rightBlock) scene.remove(checkpoint.rightBlock);
+            });
+            checkpoints = [];
+
+            // Reset player position to start of new segment
+            camera.position.set(0, 0, 50);
+            camera.rotation.set(0, 0, 0);
+
+            // Reset falling state
+            state.velocityY = 0;
+            state.isGrounded = true;
+
+            // Reset checkpoint generation
+            nextCheckpointZ = -50; // First checkpoint 100 units ahead
+            lastWallEndZ = 50;
+
+            // Generate new checkpoints (one checkpoint = one choice point)
+            generateCheckpoint();
+
+            // Increase correct path count (player successfully fell through)
+            correctPathCount++;
+
+            // Check if player has won (3 successful falls)
+            if (correctPathCount >= 3) {
+                state.escaped = true;
+                showEscapeScreen();
+                return;
+            }
+
+            console.log(`Teleported! Progress: ${correctPathCount}/3`);
         }
 
         // ===========================
@@ -1801,28 +1886,8 @@
                 checkCheckpoints(); // Check if player is at a checkpoint
                 updateCheckpointEffects(delta); // Update checkpoint lights and EXIT panels
 
-                // Generate new checkpoints as player progresses
-                if (checkpoints.length > 0 && camera.position.z < checkpoints[checkpoints.length - 1].z + 200) {
-                    generateCheckpoint();
-                }
-
-                // Clean up old checkpoints behind player (performance optimization)
-                // Keep only checkpoints within 300 units of player
-                for (let i = checkpoints.length - 1; i >= 0; i--) {
-                    const checkpoint = checkpoints[i];
-                    if (camera.position.z < checkpoint.z - 300) {
-                        // Remove from scene
-                        if (checkpoint.light) scene.remove(checkpoint.light);
-                        if (checkpoint.exitPanel) scene.remove(checkpoint.exitPanel);
-                        if (checkpoint.leftDoor) scene.remove(checkpoint.leftDoor);
-                        if (checkpoint.rightDoor) scene.remove(checkpoint.rightDoor);
-                        if (checkpoint.leftBlock) scene.remove(checkpoint.leftBlock);
-                        if (checkpoint.rightBlock) scene.remove(checkpoint.rightBlock);
-
-                        // Remove from array
-                        checkpoints.splice(i, 1);
-                    }
-                }
+                // No auto-generation - each segment has only one checkpoint (end point)
+                // Player must choose left or right, fall through, and teleport to next segment
             }
 
             // Animate flowing text like code stream
