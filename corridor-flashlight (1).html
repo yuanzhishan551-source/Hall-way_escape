@@ -321,6 +321,9 @@
         // Wall text for textures
         const wallText = `RUN ESCAPE DANGER GET OUT FLEE WARNING EXIT HURRY # | / \\ - + = * : . X H M W N data information technology digital world artificial intelligence machine learning algorithm code programming software development BUG ERROR SYSTEM CORRUPTED`;
 
+        // Shared texture cache for performance
+        let sharedWallTexture = null;
+
         // Checkpoint system - infinite generation
         let checkpoints = [];
         let nextCheckpointZ = -100;
@@ -328,6 +331,7 @@
         let currentCheckpoint = null;
         let atCheckpoint = false;
         let exitRevealed = false; // Track if exit is revealed by green light
+        let lastWallEndZ = 80; // Track where the last wall segment ended
 
         function init() {
             // Scene
@@ -380,18 +384,20 @@
             // Initialize audio
             initAudio();
 
+            // Create shared wall texture once (performance optimization)
+            sharedWallTexture = createTextTexture(wallText);
+
             // Create corridor
             createCorridor();
 
-            // Create initial monsters
-            createMonster();
+            // Create initial monsters (reduced for performance)
             createMonster();
             createMonster();
             setInterval(() => {
-                if (monsters.length < 25) { // Increased from 10 to 25
+                if (monsters.length < 8) { // Reduced from 25 to 8 for performance
                     createMonster();
                 }
-            }, 1500); // Faster spawn: 4000ms -> 1500ms
+            }, 2500); // Slower spawn for performance
 
             // Setup controls
             setupControls();
@@ -453,8 +459,8 @@
         // CREATE 3D CORRIDOR WITH INTERSECTIONS
         // ===========================
         function createCorridor() {
-            // Create text texture
-            const textTexture = createTextTexture(wallText);
+            // Use shared texture for performance
+            const textTexture = sharedWallTexture;
 
             // Corridor dimensions
             const corridorWidth = 6;
@@ -507,64 +513,18 @@
             ceiling.position.y = 5;
             scene.add(ceiling);
 
-            // Create segmented walls with openings at intersections
-            // Build walls in segments between intersections
-            const segments = [
-                { start: 250, end: 120 },   // Before first intersection
-                { start: 96, end: 20 },     // Between 1st and 2nd intersection
-                { start: -4, end: -80 },    // Between 2nd and 3rd intersection
-                { start: -104, end: -250 }  // After last intersection
-            ];
-
-            segments.forEach(segment => {
-                const segmentLength = Math.abs(segment.end - segment.start);
-                const segmentCenter = (segment.start + segment.end) / 2;
-
-                // Right wall segment
-                const rightWallTexture = textTexture.clone();
-                rightWallTexture.wrapS = THREE.RepeatWrapping;
-                rightWallTexture.wrapT = THREE.RepeatWrapping;
-                rightWallTexture.repeat.set(segmentLength / 10, 2);
-                rightWallTexture.needsUpdate = true;
-                wallTextures.push(rightWallTexture);
-
-                const rightWallGeometry = new THREE.PlaneGeometry(segmentLength, corridorHeight);
-                const rightWallMaterial = new THREE.MeshStandardMaterial({
-                    map: rightWallTexture,
-                    side: THREE.DoubleSide,
-                    emissive: 0x555555,
-                    emissiveMap: rightWallTexture,
-                    emissiveIntensity: 0.8
-                });
-                const rightWall = new THREE.Mesh(rightWallGeometry, rightWallMaterial);
-                rightWall.position.set(3, 0, segmentCenter);
-                rightWall.rotation.y = -Math.PI / 2;
-                scene.add(rightWall);
-
-                // Left wall segment
-                const leftWallTexture = textTexture.clone();
-                leftWallTexture.wrapS = THREE.RepeatWrapping;
-                leftWallTexture.wrapT = THREE.RepeatWrapping;
-                leftWallTexture.repeat.set(segmentLength / 10, 2);
-                leftWallTexture.needsUpdate = true;
-                wallTextures.push(leftWallTexture);
-
-                const leftWallGeometry = new THREE.PlaneGeometry(segmentLength, corridorHeight);
-                const leftWallMaterial = new THREE.MeshStandardMaterial({
-                    map: leftWallTexture,
-                    side: THREE.DoubleSide,
-                    emissive: 0x555555,
-                    emissiveMap: leftWallTexture,
-                    emissiveIntensity: 0.8
-                });
-                const leftWall = new THREE.Mesh(leftWallGeometry, leftWallMaterial);
-                leftWall.position.set(-3, 0, segmentCenter);
-                leftWall.rotation.y = -Math.PI / 2;
-                scene.add(leftWall);
-            });
+            // Initial wall segment from start to first checkpoint area
+            const initialSegment = { start: 250, end: 80 };
+            createWallSegment(initialSegment.start, initialSegment.end, textTexture);
 
             // Front wall (end of corridor)
             const frontWallTexture = textTexture.clone();
+            frontWallTexture.wrapS = THREE.RepeatWrapping;
+            frontWallTexture.wrapT = THREE.RepeatWrapping;
+            frontWallTexture.repeat.set(2, 2);
+            frontWallTexture.needsUpdate = true;
+            wallTextures.push(frontWallTexture);
+
             const frontWallGeometry = new THREE.PlaneGeometry(corridorWidth, corridorHeight);
             const frontWallMaterial = new THREE.MeshStandardMaterial({
                 map: frontWallTexture,
@@ -579,6 +539,12 @@
 
             // Back wall (start of corridor - where exit door will be)
             const backWallTexture = textTexture.clone();
+            backWallTexture.wrapS = THREE.RepeatWrapping;
+            backWallTexture.wrapT = THREE.RepeatWrapping;
+            backWallTexture.repeat.set(2, 2);
+            backWallTexture.needsUpdate = true;
+            wallTextures.push(backWallTexture);
+
             const backWallGeometry = new THREE.PlaneGeometry(corridorWidth, corridorHeight);
             const backWallMaterial = new THREE.MeshStandardMaterial({
                 map: backWallTexture,
@@ -598,6 +564,57 @@
             generateCheckpoint();
             generateCheckpoint();
             generateCheckpoint();
+        }
+
+        // ===========================
+        // CREATE WALL SEGMENT
+        // ===========================
+        function createWallSegment(startZ, endZ, baseTexture) {
+            const corridorHeight = 10;
+            const segmentLength = Math.abs(endZ - startZ);
+            const segmentCenter = (startZ + endZ) / 2;
+
+            // Right wall segment
+            const rightWallTexture = baseTexture.clone();
+            rightWallTexture.wrapS = THREE.RepeatWrapping;
+            rightWallTexture.wrapT = THREE.RepeatWrapping;
+            rightWallTexture.repeat.set(segmentLength / 10, 2);
+            rightWallTexture.needsUpdate = true;
+            wallTextures.push(rightWallTexture);
+
+            const rightWallGeometry = new THREE.PlaneGeometry(segmentLength, corridorHeight);
+            const rightWallMaterial = new THREE.MeshStandardMaterial({
+                map: rightWallTexture,
+                side: THREE.DoubleSide,
+                emissive: 0x555555,
+                emissiveMap: rightWallTexture,
+                emissiveIntensity: 0.8
+            });
+            const rightWall = new THREE.Mesh(rightWallGeometry, rightWallMaterial);
+            rightWall.position.set(3, 0, segmentCenter);
+            rightWall.rotation.y = -Math.PI / 2;
+            scene.add(rightWall);
+
+            // Left wall segment
+            const leftWallTexture = baseTexture.clone();
+            leftWallTexture.wrapS = THREE.RepeatWrapping;
+            leftWallTexture.wrapT = THREE.RepeatWrapping;
+            leftWallTexture.repeat.set(segmentLength / 10, 2);
+            leftWallTexture.needsUpdate = true;
+            wallTextures.push(leftWallTexture);
+
+            const leftWallGeometry = new THREE.PlaneGeometry(segmentLength, corridorHeight);
+            const leftWallMaterial = new THREE.MeshStandardMaterial({
+                map: leftWallTexture,
+                side: THREE.DoubleSide,
+                emissive: 0x555555,
+                emissiveMap: leftWallTexture,
+                emissiveIntensity: 0.8
+            });
+            const leftWall = new THREE.Mesh(leftWallGeometry, leftWallMaterial);
+            leftWall.position.set(-3, 0, segmentCenter);
+            leftWall.rotation.y = -Math.PI / 2;
+            scene.add(leftWall);
         }
 
         // ===========================
@@ -728,21 +745,22 @@
             scene.add(exitPanel);
             checkpoint.exitPanel = exitPanel;
 
-            // Create LEFT branch corridor using planes
+            // Create LEFT branch corridor - simplified like main corridor
             const leftBranchGroup = new THREE.Group();
-            const branchLength = 18; // Extended to include connection to main corridor
-            const branchWidth = 3;
+            const branchLength = 15; // Branch corridor length (x=-3 to x=-18)
+            const branchWidth = 3;   // Branch corridor width (z direction)
 
-            // Create text texture for branch
-            const branchTexture = createTextTexture(wallText);
+            // Use shared texture for performance
+            const branchTexture = sharedWallTexture;
 
-            // Left branch floor (extended to connect to main corridor)
+            // Left branch floor (simple plane like main corridor)
             const leftFloorTex = branchTexture.clone();
             leftFloorTex.wrapS = THREE.RepeatWrapping;
             leftFloorTex.wrapT = THREE.RepeatWrapping;
-            leftFloorTex.repeat.set(1, 6);
+            leftFloorTex.repeat.set(5, 1); // Length 15m / 3 = 5 repeats
             leftFloorTex.needsUpdate = true;
-            const leftFloorGeo = new THREE.PlaneGeometry(branchWidth, branchLength);
+
+            const leftFloorGeo = new THREE.PlaneGeometry(15, 3); // 15m long (X), 3m wide (Z)
             const leftFloorMat = new THREE.MeshStandardMaterial({
                 map: leftFloorTex,
                 side: THREE.DoubleSide,
@@ -751,18 +769,18 @@
                 emissiveIntensity: 0.8
             });
             const leftFloor = new THREE.Mesh(leftFloorGeo, leftFloorMat);
-            leftFloor.rotation.x = -Math.PI / 2;
-            leftFloor.rotation.z = Math.PI / 2;
-            leftFloor.position.set(-branchLength / 2, -5, checkpoint.z); // Start from x=0 (main corridor center)
+            leftFloor.rotation.x = -Math.PI / 2; // Lay flat like main corridor floor
+            leftFloor.position.set(-10.5, -5, checkpoint.z); // Center at x=-10.5 (midpoint of -3 to -18)
             leftBranchGroup.add(leftFloor);
 
-            // Left branch ceiling (extended to connect to main corridor)
+            // Left branch ceiling (simple plane like main corridor)
             const leftCeilingTex = branchTexture.clone();
             leftCeilingTex.wrapS = THREE.RepeatWrapping;
             leftCeilingTex.wrapT = THREE.RepeatWrapping;
-            leftCeilingTex.repeat.set(1, 6);
+            leftCeilingTex.repeat.set(5, 1);
             leftCeilingTex.needsUpdate = true;
-            const leftCeilingGeo = new THREE.PlaneGeometry(branchWidth, branchLength);
+
+            const leftCeilingGeo = new THREE.PlaneGeometry(15, 3);
             const leftCeilingMat = new THREE.MeshStandardMaterial({
                 map: leftCeilingTex,
                 side: THREE.DoubleSide,
@@ -772,17 +790,17 @@
             });
             const leftCeiling = new THREE.Mesh(leftCeilingGeo, leftCeilingMat);
             leftCeiling.rotation.x = -Math.PI / 2;
-            leftCeiling.rotation.z = Math.PI / 2;
-            leftCeiling.position.set(-branchLength / 2, 5, checkpoint.z); // Start from x=0
+            leftCeiling.position.set(-10.5, 5, checkpoint.z);
             leftBranchGroup.add(leftCeiling);
 
-            // Left branch back wall
+            // Left branch back wall (Z = checkpoint.z - 1.5, spanning X from -18 to -3)
             const leftBackWallTex = branchTexture.clone();
             leftBackWallTex.wrapS = THREE.RepeatWrapping;
             leftBackWallTex.wrapT = THREE.RepeatWrapping;
-            leftBackWallTex.repeat.set(6, 2);
+            leftBackWallTex.repeat.set(5, 2);
             leftBackWallTex.needsUpdate = true;
-            const leftBackWallGeo = new THREE.PlaneGeometry(branchLength, 10);
+
+            const leftBackWallGeo = new THREE.PlaneGeometry(15, 10);
             const leftBackWallMat = new THREE.MeshStandardMaterial({
                 map: leftBackWallTex,
                 side: THREE.DoubleSide,
@@ -791,17 +809,17 @@
                 emissiveIntensity: 0.8
             });
             const leftBackWall = new THREE.Mesh(leftBackWallGeo, leftBackWallMat);
-            leftBackWall.rotation.y = Math.PI / 2;
-            leftBackWall.position.set(-branchLength / 2, 0, checkpoint.z - branchWidth / 2);
+            leftBackWall.position.set(-10.5, 0, checkpoint.z - 1.5);
             leftBranchGroup.add(leftBackWall);
 
-            // Left branch front wall
+            // Left branch front wall (Z = checkpoint.z + 1.5, spanning X from -18 to -3)
             const leftFrontWallTex = branchTexture.clone();
             leftFrontWallTex.wrapS = THREE.RepeatWrapping;
             leftFrontWallTex.wrapT = THREE.RepeatWrapping;
-            leftFrontWallTex.repeat.set(6, 2);
+            leftFrontWallTex.repeat.set(5, 2);
             leftFrontWallTex.needsUpdate = true;
-            const leftFrontWallGeo = new THREE.PlaneGeometry(branchLength, 10);
+
+            const leftFrontWallGeo = new THREE.PlaneGeometry(15, 10);
             const leftFrontWallMat = new THREE.MeshStandardMaterial({
                 map: leftFrontWallTex,
                 side: THREE.DoubleSide,
@@ -810,13 +828,12 @@
                 emissiveIntensity: 0.8
             });
             const leftFrontWall = new THREE.Mesh(leftFrontWallGeo, leftFrontWallMat);
-            leftFrontWall.rotation.y = Math.PI / 2;
-            leftFrontWall.position.set(-branchLength / 2, 0, checkpoint.z + branchWidth / 2);
+            leftFrontWall.position.set(-10.5, 0, checkpoint.z + 1.5);
             leftBranchGroup.add(leftFrontWall);
 
-            // Left branch end wall
+            // Left branch end wall (X = -18)
             const leftEndWallTex = branchTexture.clone();
-            const leftEndWallGeo = new THREE.PlaneGeometry(branchWidth, 10);
+            const leftEndWallGeo = new THREE.PlaneGeometry(3, 10);
             const leftEndWallMat = new THREE.MeshStandardMaterial({
                 map: leftEndWallTex,
                 side: THREE.DoubleSide,
@@ -825,22 +842,24 @@
                 emissiveIntensity: 0.8
             });
             const leftEndWall = new THREE.Mesh(leftEndWallGeo, leftEndWallMat);
-            leftEndWall.position.set(-branchLength, 0, checkpoint.z);
+            leftEndWall.rotation.y = Math.PI / 2;
+            leftEndWall.position.set(-18, 0, checkpoint.z);
             leftBranchGroup.add(leftEndWall);
 
             scene.add(leftBranchGroup);
             checkpoint.leftDoor = leftBranchGroup;
 
-            // Create RIGHT branch corridor using planes
+            // Create RIGHT branch corridor - simplified like main corridor
             const rightBranchGroup = new THREE.Group();
 
-            // Right branch floor (extended to connect to main corridor)
+            // Right branch floor (simple plane)
             const rightFloorTex = branchTexture.clone();
             rightFloorTex.wrapS = THREE.RepeatWrapping;
             rightFloorTex.wrapT = THREE.RepeatWrapping;
-            rightFloorTex.repeat.set(1, 6);
+            rightFloorTex.repeat.set(5, 1);
             rightFloorTex.needsUpdate = true;
-            const rightFloorGeo = new THREE.PlaneGeometry(branchWidth, branchLength);
+
+            const rightFloorGeo = new THREE.PlaneGeometry(15, 3);
             const rightFloorMat = new THREE.MeshStandardMaterial({
                 map: rightFloorTex,
                 side: THREE.DoubleSide,
@@ -850,17 +869,17 @@
             });
             const rightFloor = new THREE.Mesh(rightFloorGeo, rightFloorMat);
             rightFloor.rotation.x = -Math.PI / 2;
-            rightFloor.rotation.z = Math.PI / 2;
-            rightFloor.position.set(branchLength / 2, -5, checkpoint.z); // Start from x=0
+            rightFloor.position.set(10.5, -5, checkpoint.z);
             rightBranchGroup.add(rightFloor);
 
-            // Right branch ceiling (extended to connect to main corridor)
+            // Right branch ceiling (simple plane)
             const rightCeilingTex = branchTexture.clone();
             rightCeilingTex.wrapS = THREE.RepeatWrapping;
             rightCeilingTex.wrapT = THREE.RepeatWrapping;
-            rightCeilingTex.repeat.set(1, 6);
+            rightCeilingTex.repeat.set(5, 1);
             rightCeilingTex.needsUpdate = true;
-            const rightCeilingGeo = new THREE.PlaneGeometry(branchWidth, branchLength);
+
+            const rightCeilingGeo = new THREE.PlaneGeometry(15, 3);
             const rightCeilingMat = new THREE.MeshStandardMaterial({
                 map: rightCeilingTex,
                 side: THREE.DoubleSide,
@@ -870,17 +889,17 @@
             });
             const rightCeiling = new THREE.Mesh(rightCeilingGeo, rightCeilingMat);
             rightCeiling.rotation.x = -Math.PI / 2;
-            rightCeiling.rotation.z = Math.PI / 2;
-            rightCeiling.position.set(branchLength / 2, 5, checkpoint.z); // Start from x=0
+            rightCeiling.position.set(10.5, 5, checkpoint.z);
             rightBranchGroup.add(rightCeiling);
 
-            // Right branch back wall
+            // Right branch back wall (Z = checkpoint.z - 1.5)
             const rightBackWallTex = branchTexture.clone();
             rightBackWallTex.wrapS = THREE.RepeatWrapping;
             rightBackWallTex.wrapT = THREE.RepeatWrapping;
-            rightBackWallTex.repeat.set(6, 2);
+            rightBackWallTex.repeat.set(5, 2);
             rightBackWallTex.needsUpdate = true;
-            const rightBackWallGeo = new THREE.PlaneGeometry(branchLength, 10);
+
+            const rightBackWallGeo = new THREE.PlaneGeometry(15, 10);
             const rightBackWallMat = new THREE.MeshStandardMaterial({
                 map: rightBackWallTex,
                 side: THREE.DoubleSide,
@@ -889,17 +908,17 @@
                 emissiveIntensity: 0.8
             });
             const rightBackWall = new THREE.Mesh(rightBackWallGeo, rightBackWallMat);
-            rightBackWall.rotation.y = Math.PI / 2;
-            rightBackWall.position.set(branchLength / 2, 0, checkpoint.z - branchWidth / 2);
+            rightBackWall.position.set(10.5, 0, checkpoint.z - 1.5);
             rightBranchGroup.add(rightBackWall);
 
-            // Right branch front wall
+            // Right branch front wall (Z = checkpoint.z + 1.5)
             const rightFrontWallTex = branchTexture.clone();
             rightFrontWallTex.wrapS = THREE.RepeatWrapping;
             rightFrontWallTex.wrapT = THREE.RepeatWrapping;
-            rightFrontWallTex.repeat.set(6, 2);
+            rightFrontWallTex.repeat.set(5, 2);
             rightFrontWallTex.needsUpdate = true;
-            const rightFrontWallGeo = new THREE.PlaneGeometry(branchLength, 10);
+
+            const rightFrontWallGeo = new THREE.PlaneGeometry(15, 10);
             const rightFrontWallMat = new THREE.MeshStandardMaterial({
                 map: rightFrontWallTex,
                 side: THREE.DoubleSide,
@@ -908,13 +927,12 @@
                 emissiveIntensity: 0.8
             });
             const rightFrontWall = new THREE.Mesh(rightFrontWallGeo, rightFrontWallMat);
-            rightFrontWall.rotation.y = Math.PI / 2;
-            rightFrontWall.position.set(branchLength / 2, 0, checkpoint.z + branchWidth / 2);
+            rightFrontWall.position.set(10.5, 0, checkpoint.z + 1.5);
             rightBranchGroup.add(rightFrontWall);
 
-            // Right branch end wall
+            // Right branch end wall (X = 18)
             const rightEndWallTex = branchTexture.clone();
-            const rightEndWallGeo = new THREE.PlaneGeometry(branchWidth, 10);
+            const rightEndWallGeo = new THREE.PlaneGeometry(3, 10);
             const rightEndWallMat = new THREE.MeshStandardMaterial({
                 map: rightEndWallTex,
                 side: THREE.DoubleSide,
@@ -923,7 +941,8 @@
                 emissiveIntensity: 0.8
             });
             const rightEndWall = new THREE.Mesh(rightEndWallGeo, rightEndWallMat);
-            rightEndWall.position.set(branchLength, 0, checkpoint.z);
+            rightEndWall.rotation.y = Math.PI / 2;
+            rightEndWall.position.set(18, 0, checkpoint.z);
             rightBranchGroup.add(rightEndWall);
 
             scene.add(rightBranchGroup);
@@ -952,6 +971,89 @@
             rightBlock.rotation.y = -Math.PI / 2;
             scene.add(rightBlock);
             checkpoint.rightBlock = rightBlock;
+
+            // Generate wall segment from last wall end to this checkpoint's opening
+            const openingHalfWidth = 1.5; // Match branchWidth / 2
+            const wallStartZ = lastWallEndZ;
+            const wallEndZ = checkpoint.z + openingHalfWidth;
+
+            if (wallStartZ > wallEndZ) {
+                // Create wall segment before this checkpoint (reuse shared texture)
+                createWallSegment(wallStartZ, wallEndZ, sharedWallTexture);
+            }
+
+            // Create connecting walls in main corridor area (x=-3 to x=3)
+            // These fill the gap where branch corridors don't have front/back walls
+            const connectorTexture = sharedWallTexture;
+            connectorTexture.wrapS = THREE.RepeatWrapping;
+            connectorTexture.wrapT = THREE.RepeatWrapping;
+            connectorTexture.repeat.set(0.3, 2);
+            connectorTexture.needsUpdate = true;
+
+            // Front connector walls (at z = checkpoint.z + 1.5)
+            const frontZ = checkpoint.z + branchWidth / 2;
+
+            // Left front (x=-3 to x=-0.5, length=2.5m, center at x=-1.75)
+            const leftFrontConn = new THREE.Mesh(
+                new THREE.PlaneGeometry(2.5, 10),
+                new THREE.MeshStandardMaterial({
+                    map: connectorTexture.clone(),
+                    side: THREE.DoubleSide,
+                    emissive: 0x555555,
+                    emissiveMap: connectorTexture.clone(),
+                    emissiveIntensity: 0.8
+                })
+            );
+            leftFrontConn.position.set(-1.75, 0, frontZ);
+            scene.add(leftFrontConn);
+
+            // Right front (x=0.5 to x=3, length=2.5m, center at x=1.75)
+            const rightFrontConn = new THREE.Mesh(
+                new THREE.PlaneGeometry(2.5, 10),
+                new THREE.MeshStandardMaterial({
+                    map: connectorTexture.clone(),
+                    side: THREE.DoubleSide,
+                    emissive: 0x555555,
+                    emissiveMap: connectorTexture.clone(),
+                    emissiveIntensity: 0.8
+                })
+            );
+            rightFrontConn.position.set(1.75, 0, frontZ);
+            scene.add(rightFrontConn);
+
+            // Back connector walls (at z = checkpoint.z - 1.5)
+            const backZ = checkpoint.z - branchWidth / 2;
+
+            // Left back (x=-3 to x=-0.5)
+            const leftBackConn = new THREE.Mesh(
+                new THREE.PlaneGeometry(2.5, 10),
+                new THREE.MeshStandardMaterial({
+                    map: connectorTexture.clone(),
+                    side: THREE.DoubleSide,
+                    emissive: 0x555555,
+                    emissiveMap: connectorTexture.clone(),
+                    emissiveIntensity: 0.8
+                })
+            );
+            leftBackConn.position.set(-1.75, 0, backZ);
+            scene.add(leftBackConn);
+
+            // Right back (x=0.5 to x=3)
+            const rightBackConn = new THREE.Mesh(
+                new THREE.PlaneGeometry(2.5, 10),
+                new THREE.MeshStandardMaterial({
+                    map: connectorTexture.clone(),
+                    side: THREE.DoubleSide,
+                    emissive: 0x555555,
+                    emissiveMap: connectorTexture.clone(),
+                    emissiveIntensity: 0.8
+                })
+            );
+            rightBackConn.position.set(1.75, 0, backZ);
+            scene.add(rightBackConn);
+
+            // Update last wall end position to after this checkpoint
+            lastWallEndZ = checkpoint.z - openingHalfWidth;
 
             // Add checkpoint to array and update next position
             checkpoints.push(checkpoint);
@@ -1057,8 +1159,8 @@
             const monsterType = Math.random() > 0.6 ? 'green' : 'red';
             const baseColor = monsterType === 'red' ? '#ff0000' : '#00ff00';
 
-            // Create 40-60 text fragments in a cluster (much denser)
-            const fragmentCount = Math.floor(Math.random() * 21) + 40; // 40-60 fragments
+            // Create 10-20 text fragments in a cluster (reduced for performance)
+            const fragmentCount = Math.floor(Math.random() * 11) + 10; // 10-20 fragments (was 40-60)
 
             for (let i = 0; i < fragmentCount; i++) {
                 const text = monsterTexts[Math.floor(Math.random() * monsterTexts.length)];
@@ -1496,11 +1598,13 @@
                 }
 
                 // Main corridor length bounds
-                camera.position.z = Math.max(-252, Math.min(245, camera.position.z));
+                // Only limit forward movement (z=245), allow infinite backward movement
+                camera.position.z = Math.min(245, camera.position.z);
             }
 
             // Check if player reached exit door (escaped)
-            if (camera.position.z < -249) {
+            // Exit door appears at z=-250 after 3 correct choices
+            if (camera.position.z < -249 && correctPathCount >= 3) {
                 state.escaped = true;
                 showEscapeScreen();
             }
@@ -1944,6 +2048,24 @@
                 // Generate new checkpoints as player progresses
                 if (checkpoints.length > 0 && camera.position.z < checkpoints[checkpoints.length - 1].z + 200) {
                     generateCheckpoint();
+                }
+
+                // Clean up old checkpoints behind player (performance optimization)
+                // Keep only checkpoints within 300 units of player
+                for (let i = checkpoints.length - 1; i >= 0; i--) {
+                    const checkpoint = checkpoints[i];
+                    if (camera.position.z < checkpoint.z - 300) {
+                        // Remove from scene
+                        if (checkpoint.light) scene.remove(checkpoint.light);
+                        if (checkpoint.exitPanel) scene.remove(checkpoint.exitPanel);
+                        if (checkpoint.leftDoor) scene.remove(checkpoint.leftDoor);
+                        if (checkpoint.rightDoor) scene.remove(checkpoint.rightDoor);
+                        if (checkpoint.leftBlock) scene.remove(checkpoint.leftBlock);
+                        if (checkpoint.rightBlock) scene.remove(checkpoint.rightBlock);
+
+                        // Remove from array
+                        checkpoints.splice(i, 1);
+                    }
                 }
             }
 
