@@ -607,8 +607,13 @@
             const segmentCenter = (startZ + endZ) / 2;
             const tex = createTexture(baseTexture, segmentLength / 10, 2);
 
-            scene.add(createPlane(segmentLength, 10, tex, 3, 0, segmentCenter, 0, -Math.PI / 2));
-            scene.add(createPlane(segmentLength, 10, createTexture(baseTexture, segmentLength / 10, 2), -3, 0, segmentCenter, 0, -Math.PI / 2));
+            const rightWall = createPlane(segmentLength, 10, tex, 3, 0, segmentCenter, 0, -Math.PI / 2);
+            const leftWall = createPlane(segmentLength, 10, createTexture(baseTexture, segmentLength / 10, 2), -3, 0, segmentCenter, 0, -Math.PI / 2);
+
+            scene.add(rightWall);
+            scene.add(leftWall);
+
+            return [rightWall, leftWall]; // Return walls so they can be cleaned up later
         }
 
         // ===========================
@@ -754,7 +759,7 @@
 
             if (wallStartZ > wallEndZ) {
                 // Create wall segment before this checkpoint
-                createWallSegment(wallStartZ, wallEndZ, sharedWallTexture);
+                checkpoint.mainWalls = createWallSegment(wallStartZ, wallEndZ, sharedWallTexture);
             }
 
             // Create back wall of main corridor at checkpoint (dead end)
@@ -1368,6 +1373,9 @@
                 if (checkpoint.leftBlock) scene.remove(checkpoint.leftBlock);
                 if (checkpoint.rightBlock) scene.remove(checkpoint.rightBlock);
                 if (checkpoint.backWall) scene.remove(checkpoint.backWall);
+                if (checkpoint.mainWalls) {
+                    checkpoint.mainWalls.forEach(wall => scene.remove(wall));
+                }
             });
             checkpoints = [];
 
