@@ -567,54 +567,71 @@
         }
 
         // ===========================
+        // HELPER FUNCTIONS FOR GEOMETRY CREATION
+        // ===========================
+        function createTexture(baseTexture, repeatX, repeatY) {
+            const tex = baseTexture.clone();
+            tex.wrapS = THREE.RepeatWrapping;
+            tex.wrapT = THREE.RepeatWrapping;
+            tex.repeat.set(repeatX, repeatY);
+            tex.needsUpdate = true;
+            wallTextures.push(tex);
+            return tex;
+        }
+
+        function createWallMaterial(texture) {
+            return new THREE.MeshStandardMaterial({
+                map: texture,
+                side: THREE.DoubleSide,
+                emissive: 0x555555,
+                emissiveMap: texture,
+                emissiveIntensity: 0.8
+            });
+        }
+
+        function createPlane(width, height, texture, x, y, z, rotX = 0, rotY = 0) {
+            const geometry = new THREE.PlaneGeometry(width, height);
+            const material = createWallMaterial(texture);
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.set(x, y, z);
+            if (rotX) mesh.rotation.x = rotX;
+            if (rotY) mesh.rotation.y = rotY;
+            return mesh;
+        }
+
+        // ===========================
         // CREATE WALL SEGMENT
         // ===========================
         function createWallSegment(startZ, endZ, baseTexture) {
-            const corridorHeight = 10;
             const segmentLength = Math.abs(endZ - startZ);
             const segmentCenter = (startZ + endZ) / 2;
+            const tex = createTexture(baseTexture, segmentLength / 10, 2);
 
-            // Right wall segment
-            const rightWallTexture = baseTexture.clone();
-            rightWallTexture.wrapS = THREE.RepeatWrapping;
-            rightWallTexture.wrapT = THREE.RepeatWrapping;
-            rightWallTexture.repeat.set(segmentLength / 10, 2);
-            rightWallTexture.needsUpdate = true;
-            wallTextures.push(rightWallTexture);
+            scene.add(createPlane(segmentLength, 10, tex, 3, 0, segmentCenter, 0, -Math.PI / 2));
+            scene.add(createPlane(segmentLength, 10, createTexture(baseTexture, segmentLength / 10, 2), -3, 0, segmentCenter, 0, -Math.PI / 2));
+        }
 
-            const rightWallGeometry = new THREE.PlaneGeometry(segmentLength, corridorHeight);
-            const rightWallMaterial = new THREE.MeshStandardMaterial({
-                map: rightWallTexture,
-                side: THREE.DoubleSide,
-                emissive: 0x555555,
-                emissiveMap: rightWallTexture,
-                emissiveIntensity: 0.8
-            });
-            const rightWall = new THREE.Mesh(rightWallGeometry, rightWallMaterial);
-            rightWall.position.set(3, 0, segmentCenter);
-            rightWall.rotation.y = -Math.PI / 2;
-            scene.add(rightWall);
+        // ===========================
+        // CREATE BRANCH CORRIDOR
+        // ===========================
+        function createBranchCorridor(centerX, endX, z) {
+            const group = new THREE.Group();
+            const rotX = -Math.PI / 2;
+            const rotY = Math.PI / 2;
 
-            // Left wall segment
-            const leftWallTexture = baseTexture.clone();
-            leftWallTexture.wrapS = THREE.RepeatWrapping;
-            leftWallTexture.wrapT = THREE.RepeatWrapping;
-            leftWallTexture.repeat.set(segmentLength / 10, 2);
-            leftWallTexture.needsUpdate = true;
-            wallTextures.push(leftWallTexture);
+            // Floor & Ceiling
+            group.add(createPlane(15, 3, createTexture(sharedWallTexture, 5, 1), centerX, -5, z, rotX));
+            group.add(createPlane(15, 3, createTexture(sharedWallTexture, 5, 1), centerX, 5, z, rotX));
 
-            const leftWallGeometry = new THREE.PlaneGeometry(segmentLength, corridorHeight);
-            const leftWallMaterial = new THREE.MeshStandardMaterial({
-                map: leftWallTexture,
-                side: THREE.DoubleSide,
-                emissive: 0x555555,
-                emissiveMap: leftWallTexture,
-                emissiveIntensity: 0.8
-            });
-            const leftWall = new THREE.Mesh(leftWallGeometry, leftWallMaterial);
-            leftWall.position.set(-3, 0, segmentCenter);
-            leftWall.rotation.y = -Math.PI / 2;
-            scene.add(leftWall);
+            // Front & Back walls
+            group.add(createPlane(15, 10, createTexture(sharedWallTexture, 5, 2), centerX, 0, z - 1.5));
+            group.add(createPlane(15, 10, createTexture(sharedWallTexture, 5, 2), centerX, 0, z + 1.5));
+
+            // End wall
+            group.add(createPlane(3, 10, createTexture(sharedWallTexture, 1, 2), endX, 0, z, 0, rotY));
+
+            scene.add(group);
+            return group;
         }
 
         // ===========================
@@ -745,208 +762,9 @@
             scene.add(exitPanel);
             checkpoint.exitPanel = exitPanel;
 
-            // Create LEFT branch corridor - simplified like main corridor
-            const leftBranchGroup = new THREE.Group();
-            const branchLength = 15; // Branch corridor length (x=-3 to x=-18)
-            const branchWidth = 3;   // Branch corridor width (z direction)
-
-            // Use shared texture for performance
-            const branchTexture = sharedWallTexture;
-
-            // Left branch floor (simple plane like main corridor)
-            const leftFloorTex = branchTexture.clone();
-            leftFloorTex.wrapS = THREE.RepeatWrapping;
-            leftFloorTex.wrapT = THREE.RepeatWrapping;
-            leftFloorTex.repeat.set(5, 1); // Length 15m / 3 = 5 repeats
-            leftFloorTex.needsUpdate = true;
-
-            const leftFloorGeo = new THREE.PlaneGeometry(15, 3); // 15m long (X), 3m wide (Z)
-            const leftFloorMat = new THREE.MeshStandardMaterial({
-                map: leftFloorTex,
-                side: THREE.DoubleSide,
-                emissive: 0x555555,
-                emissiveMap: leftFloorTex,
-                emissiveIntensity: 0.8
-            });
-            const leftFloor = new THREE.Mesh(leftFloorGeo, leftFloorMat);
-            leftFloor.rotation.x = -Math.PI / 2; // Lay flat like main corridor floor
-            leftFloor.position.set(-10.5, -5, checkpoint.z); // Center at x=-10.5 (midpoint of -3 to -18)
-            leftBranchGroup.add(leftFloor);
-
-            // Left branch ceiling (simple plane like main corridor)
-            const leftCeilingTex = branchTexture.clone();
-            leftCeilingTex.wrapS = THREE.RepeatWrapping;
-            leftCeilingTex.wrapT = THREE.RepeatWrapping;
-            leftCeilingTex.repeat.set(5, 1);
-            leftCeilingTex.needsUpdate = true;
-
-            const leftCeilingGeo = new THREE.PlaneGeometry(15, 3);
-            const leftCeilingMat = new THREE.MeshStandardMaterial({
-                map: leftCeilingTex,
-                side: THREE.DoubleSide,
-                emissive: 0x555555,
-                emissiveMap: leftCeilingTex,
-                emissiveIntensity: 0.8
-            });
-            const leftCeiling = new THREE.Mesh(leftCeilingGeo, leftCeilingMat);
-            leftCeiling.rotation.x = -Math.PI / 2;
-            leftCeiling.position.set(-10.5, 5, checkpoint.z);
-            leftBranchGroup.add(leftCeiling);
-
-            // Left branch back wall (Z = checkpoint.z - 1.5, spanning X from -18 to -3)
-            const leftBackWallTex = branchTexture.clone();
-            leftBackWallTex.wrapS = THREE.RepeatWrapping;
-            leftBackWallTex.wrapT = THREE.RepeatWrapping;
-            leftBackWallTex.repeat.set(5, 2);
-            leftBackWallTex.needsUpdate = true;
-
-            const leftBackWallGeo = new THREE.PlaneGeometry(15, 10);
-            const leftBackWallMat = new THREE.MeshStandardMaterial({
-                map: leftBackWallTex,
-                side: THREE.DoubleSide,
-                emissive: 0x555555,
-                emissiveMap: leftBackWallTex,
-                emissiveIntensity: 0.8
-            });
-            const leftBackWall = new THREE.Mesh(leftBackWallGeo, leftBackWallMat);
-            leftBackWall.position.set(-10.5, 0, checkpoint.z - 1.5);
-            leftBranchGroup.add(leftBackWall);
-
-            // Left branch front wall (Z = checkpoint.z + 1.5, spanning X from -18 to -3)
-            const leftFrontWallTex = branchTexture.clone();
-            leftFrontWallTex.wrapS = THREE.RepeatWrapping;
-            leftFrontWallTex.wrapT = THREE.RepeatWrapping;
-            leftFrontWallTex.repeat.set(5, 2);
-            leftFrontWallTex.needsUpdate = true;
-
-            const leftFrontWallGeo = new THREE.PlaneGeometry(15, 10);
-            const leftFrontWallMat = new THREE.MeshStandardMaterial({
-                map: leftFrontWallTex,
-                side: THREE.DoubleSide,
-                emissive: 0x555555,
-                emissiveMap: leftFrontWallTex,
-                emissiveIntensity: 0.8
-            });
-            const leftFrontWall = new THREE.Mesh(leftFrontWallGeo, leftFrontWallMat);
-            leftFrontWall.position.set(-10.5, 0, checkpoint.z + 1.5);
-            leftBranchGroup.add(leftFrontWall);
-
-            // Left branch end wall (X = -18)
-            const leftEndWallTex = branchTexture.clone();
-            const leftEndWallGeo = new THREE.PlaneGeometry(3, 10);
-            const leftEndWallMat = new THREE.MeshStandardMaterial({
-                map: leftEndWallTex,
-                side: THREE.DoubleSide,
-                emissive: 0x555555,
-                emissiveMap: leftEndWallTex,
-                emissiveIntensity: 0.8
-            });
-            const leftEndWall = new THREE.Mesh(leftEndWallGeo, leftEndWallMat);
-            leftEndWall.rotation.y = Math.PI / 2;
-            leftEndWall.position.set(-18, 0, checkpoint.z);
-            leftBranchGroup.add(leftEndWall);
-
-            scene.add(leftBranchGroup);
-            checkpoint.leftDoor = leftBranchGroup;
-
-            // Create RIGHT branch corridor - simplified like main corridor
-            const rightBranchGroup = new THREE.Group();
-
-            // Right branch floor (simple plane)
-            const rightFloorTex = branchTexture.clone();
-            rightFloorTex.wrapS = THREE.RepeatWrapping;
-            rightFloorTex.wrapT = THREE.RepeatWrapping;
-            rightFloorTex.repeat.set(5, 1);
-            rightFloorTex.needsUpdate = true;
-
-            const rightFloorGeo = new THREE.PlaneGeometry(15, 3);
-            const rightFloorMat = new THREE.MeshStandardMaterial({
-                map: rightFloorTex,
-                side: THREE.DoubleSide,
-                emissive: 0x555555,
-                emissiveMap: rightFloorTex,
-                emissiveIntensity: 0.8
-            });
-            const rightFloor = new THREE.Mesh(rightFloorGeo, rightFloorMat);
-            rightFloor.rotation.x = -Math.PI / 2;
-            rightFloor.position.set(10.5, -5, checkpoint.z);
-            rightBranchGroup.add(rightFloor);
-
-            // Right branch ceiling (simple plane)
-            const rightCeilingTex = branchTexture.clone();
-            rightCeilingTex.wrapS = THREE.RepeatWrapping;
-            rightCeilingTex.wrapT = THREE.RepeatWrapping;
-            rightCeilingTex.repeat.set(5, 1);
-            rightCeilingTex.needsUpdate = true;
-
-            const rightCeilingGeo = new THREE.PlaneGeometry(15, 3);
-            const rightCeilingMat = new THREE.MeshStandardMaterial({
-                map: rightCeilingTex,
-                side: THREE.DoubleSide,
-                emissive: 0x555555,
-                emissiveMap: rightCeilingTex,
-                emissiveIntensity: 0.8
-            });
-            const rightCeiling = new THREE.Mesh(rightCeilingGeo, rightCeilingMat);
-            rightCeiling.rotation.x = -Math.PI / 2;
-            rightCeiling.position.set(10.5, 5, checkpoint.z);
-            rightBranchGroup.add(rightCeiling);
-
-            // Right branch back wall (Z = checkpoint.z - 1.5)
-            const rightBackWallTex = branchTexture.clone();
-            rightBackWallTex.wrapS = THREE.RepeatWrapping;
-            rightBackWallTex.wrapT = THREE.RepeatWrapping;
-            rightBackWallTex.repeat.set(5, 2);
-            rightBackWallTex.needsUpdate = true;
-
-            const rightBackWallGeo = new THREE.PlaneGeometry(15, 10);
-            const rightBackWallMat = new THREE.MeshStandardMaterial({
-                map: rightBackWallTex,
-                side: THREE.DoubleSide,
-                emissive: 0x555555,
-                emissiveMap: rightBackWallTex,
-                emissiveIntensity: 0.8
-            });
-            const rightBackWall = new THREE.Mesh(rightBackWallGeo, rightBackWallMat);
-            rightBackWall.position.set(10.5, 0, checkpoint.z - 1.5);
-            rightBranchGroup.add(rightBackWall);
-
-            // Right branch front wall (Z = checkpoint.z + 1.5)
-            const rightFrontWallTex = branchTexture.clone();
-            rightFrontWallTex.wrapS = THREE.RepeatWrapping;
-            rightFrontWallTex.wrapT = THREE.RepeatWrapping;
-            rightFrontWallTex.repeat.set(5, 2);
-            rightFrontWallTex.needsUpdate = true;
-
-            const rightFrontWallGeo = new THREE.PlaneGeometry(15, 10);
-            const rightFrontWallMat = new THREE.MeshStandardMaterial({
-                map: rightFrontWallTex,
-                side: THREE.DoubleSide,
-                emissive: 0x555555,
-                emissiveMap: rightFrontWallTex,
-                emissiveIntensity: 0.8
-            });
-            const rightFrontWall = new THREE.Mesh(rightFrontWallGeo, rightFrontWallMat);
-            rightFrontWall.position.set(10.5, 0, checkpoint.z + 1.5);
-            rightBranchGroup.add(rightFrontWall);
-
-            // Right branch end wall (X = 18)
-            const rightEndWallTex = branchTexture.clone();
-            const rightEndWallGeo = new THREE.PlaneGeometry(3, 10);
-            const rightEndWallMat = new THREE.MeshStandardMaterial({
-                map: rightEndWallTex,
-                side: THREE.DoubleSide,
-                emissive: 0x555555,
-                emissiveMap: rightEndWallTex,
-                emissiveIntensity: 0.8
-            });
-            const rightEndWall = new THREE.Mesh(rightEndWallGeo, rightEndWallMat);
-            rightEndWall.rotation.y = Math.PI / 2;
-            rightEndWall.position.set(18, 0, checkpoint.z);
-            rightBranchGroup.add(rightEndWall);
-
-            scene.add(rightBranchGroup);
-            checkpoint.rightDoor = rightBranchGroup;
+            // Create branch corridors using helper function
+            checkpoint.leftDoor = createBranchCorridor(-10.5, -18, checkpoint.z);
+            checkpoint.rightDoor = createBranchCorridor(10.5, 18, checkpoint.z);
 
             // Create blocking walls (initially invisible, will appear for wrong choices)
             const blockWallGeometry = new THREE.PlaneGeometry(3, 8);
@@ -982,75 +800,13 @@
                 createWallSegment(wallStartZ, wallEndZ, sharedWallTexture);
             }
 
-            // Create connecting walls in main corridor area (x=-3 to x=3)
-            // These fill the gap where branch corridors don't have front/back walls
-            const connectorTexture = sharedWallTexture;
-            connectorTexture.wrapS = THREE.RepeatWrapping;
-            connectorTexture.wrapT = THREE.RepeatWrapping;
-            connectorTexture.repeat.set(0.3, 2);
-            connectorTexture.needsUpdate = true;
-
-            // Front connector walls (at z = checkpoint.z + 1.5)
-            const frontZ = checkpoint.z + branchWidth / 2;
-
-            // Left front (x=-3 to x=-0.5, length=2.5m, center at x=-1.75)
-            const leftFrontConn = new THREE.Mesh(
-                new THREE.PlaneGeometry(2.5, 10),
-                new THREE.MeshStandardMaterial({
-                    map: connectorTexture.clone(),
-                    side: THREE.DoubleSide,
-                    emissive: 0x555555,
-                    emissiveMap: connectorTexture.clone(),
-                    emissiveIntensity: 0.8
-                })
-            );
-            leftFrontConn.position.set(-1.75, 0, frontZ);
-            scene.add(leftFrontConn);
-
-            // Right front (x=0.5 to x=3, length=2.5m, center at x=1.75)
-            const rightFrontConn = new THREE.Mesh(
-                new THREE.PlaneGeometry(2.5, 10),
-                new THREE.MeshStandardMaterial({
-                    map: connectorTexture.clone(),
-                    side: THREE.DoubleSide,
-                    emissive: 0x555555,
-                    emissiveMap: connectorTexture.clone(),
-                    emissiveIntensity: 0.8
-                })
-            );
-            rightFrontConn.position.set(1.75, 0, frontZ);
-            scene.add(rightFrontConn);
-
-            // Back connector walls (at z = checkpoint.z - 1.5)
-            const backZ = checkpoint.z - branchWidth / 2;
-
-            // Left back (x=-3 to x=-0.5)
-            const leftBackConn = new THREE.Mesh(
-                new THREE.PlaneGeometry(2.5, 10),
-                new THREE.MeshStandardMaterial({
-                    map: connectorTexture.clone(),
-                    side: THREE.DoubleSide,
-                    emissive: 0x555555,
-                    emissiveMap: connectorTexture.clone(),
-                    emissiveIntensity: 0.8
-                })
-            );
-            leftBackConn.position.set(-1.75, 0, backZ);
-            scene.add(leftBackConn);
-
-            // Right back (x=0.5 to x=3)
-            const rightBackConn = new THREE.Mesh(
-                new THREE.PlaneGeometry(2.5, 10),
-                new THREE.MeshStandardMaterial({
-                    map: connectorTexture.clone(),
-                    side: THREE.DoubleSide,
-                    emissive: 0x555555,
-                    emissiveMap: connectorTexture.clone(),
-                    emissiveIntensity: 0.8
-                })
-            );
-            rightBackConn.position.set(1.75, 0, backZ);
-            scene.add(rightBackConn);
+            // Create connecting walls in main corridor area
+            const branchWidth = 3;
+            const tex = createTexture(sharedWallTexture, 0.3, 2);
+            [checkpoint.z + 1.5, checkpoint.z - 1.5].forEach(z => {
+                scene.add(createPlane(2.5, 10, tex, -1.75, 0, z));
+                scene.add(createPlane(2.5, 10, createTexture(sharedWallTexture, 0.3, 2), 1.75, 0, z));
+            });
 
             // Update last wall end position to after this checkpoint
             lastWallEndZ = checkpoint.z - openingHalfWidth;
