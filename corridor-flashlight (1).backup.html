@@ -1057,70 +1057,61 @@
                 console.log(`✅ Correct choice! Progress: ${correctPathCount}/3`);
 
                 // Update UI
-                document.getElementById('mode-indicator').textContent = `CORRECT! Resetting...`;
+                document.getElementById('mode-indicator').textContent = `CORRECT PATHS: ${correctPathCount}/3`;
                 document.getElementById('mode-indicator').style.color = '#00ff00';
 
-                // Check if all 3 correct - player wins
-                if (correctPathCount >= 3) {
-                    state.escaped = true;
-                    showEscapeScreen();
-                    console.log('🎉 You escaped!');
+                setTimeout(() => {
+                    document.getElementById('mode-indicator').textContent = `MODE: ${modes[state.currentMode].name}`;
+                    document.getElementById('mode-indicator').style.color = modes[state.currentMode].colorHex;
+                }, 2000);
+
+                // Block the wrong path - close the door with red wall
+                if (choice === 'left') {
+                    // Block right door
+                    if (currentCheckpoint.rightBlock) {
+                        currentCheckpoint.rightBlock.material.opacity = 0.9;
+                        currentCheckpoint.rightBlock.material.emissiveIntensity = 0.5;
+                    }
                 } else {
-                    // Teleport back to origin after a short delay
-                    setTimeout(() => {
-                        resetToOrigin();
-                        document.getElementById('mode-indicator').textContent = `MODE: ${modes[state.currentMode].name}`;
-                        document.getElementById('mode-indicator').style.color = modes[state.currentMode].colorHex;
-                    }, 1000);
+                    // Block left door
+                    if (currentCheckpoint.leftBlock) {
+                        currentCheckpoint.leftBlock.material.opacity = 0.9;
+                        currentCheckpoint.leftBlock.material.emissiveIntensity = 0.5;
+                    }
+                }
+
+                // Check if all 3 correct - create exit door
+                if (correctPathCount >= 3) {
+                    createExitDoor(500, 6, 10);
+                    console.log('🚪 Exit door appeared!');
                 }
             } else {
-                console.log(`❌ Wrong choice - GAME OVER`);
+                console.log(`❌ Wrong choice. Progress: ${correctPathCount}/3`);
 
                 // Flash red
-                document.getElementById('mode-indicator').textContent = `WRONG PATH - YOU DIED`;
+                document.getElementById('mode-indicator').textContent = `WRONG PATH`;
                 document.getElementById('mode-indicator').style.color = '#ff0000';
 
-                // Trigger immediate game over
                 setTimeout(() => {
-                    triggerGameOver();
-                }, 1000);
+                    document.getElementById('mode-indicator').textContent = `MODE: ${modes[state.currentMode].name}`;
+                    document.getElementById('mode-indicator').style.color = modes[state.currentMode].colorHex;
+                }, 2000);
+
+                // Block the chosen wrong path
+                if (choice === 'left') {
+                    if (currentCheckpoint.leftBlock) {
+                        currentCheckpoint.leftBlock.material.opacity = 0.9;
+                        currentCheckpoint.leftBlock.material.emissiveIntensity = 0.5;
+                    }
+                } else {
+                    if (currentCheckpoint.rightBlock) {
+                        currentCheckpoint.rightBlock.material.opacity = 0.9;
+                        currentCheckpoint.rightBlock.material.emissiveIntensity = 0.5;
+                    }
+                }
             }
 
             currentCheckpoint = null;
-        }
-
-        // New function to reset player to origin
-        function resetToOrigin() {
-            // Clean up all current checkpoints and their geometry
-            checkpoints.forEach(checkpoint => {
-                if (checkpoint.exitPanel) scene.remove(checkpoint.exitPanel);
-                if (checkpoint.leftDoor) scene.remove(checkpoint.leftDoor);
-                if (checkpoint.rightDoor) scene.remove(checkpoint.rightDoor);
-                if (checkpoint.leftBlock) scene.remove(checkpoint.leftBlock);
-                if (checkpoint.rightBlock) scene.remove(checkpoint.rightBlock);
-                if (checkpoint.backWall) scene.remove(checkpoint.backWall);
-                if (checkpoint.mainWalls) {
-                    checkpoint.mainWalls.forEach(wall => scene.remove(wall));
-                }
-            });
-            checkpoints = [];
-
-            // Reset player position to origin
-            camera.position.set(0, 1.6, 0);
-            camera.rotation.set(0, 0, 0);
-
-            // Reset falling state
-            state.velocityY = 0;
-            state.isGrounded = true;
-
-            // Reset checkpoint generation
-            nextCheckpointZ = -100;
-            lastWallEndZ = 80;
-
-            // Generate new checkpoint
-            generateCheckpoint();
-
-            console.log(`Teleported to origin! Progress: ${correctPathCount}/3`);
         }
 
         function checkCheckpoints() {
@@ -1224,7 +1215,7 @@
         function updateMovement(delta) {
             if (!state.isLocked || state.isGameOver) return;
 
-            const speed = 15.0;
+            const speed = 5.0;
             const gravity = -20.0; // Gravity acceleration
 
             // Store old position for collision detection
