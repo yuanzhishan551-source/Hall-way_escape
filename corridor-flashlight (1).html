@@ -334,6 +334,7 @@
         let atCheckpoint = false;
         let exitRevealed = false; // Track if exit is revealed by green light
         let lastWallEndZ = 80; // Track where the last wall segment ended
+        let initialWalls = []; // Track initial wall segments for cleanup
 
         function init() {
             // Scene
@@ -517,7 +518,7 @@
 
             // Initial wall segment from start to first checkpoint area
             const initialSegment = { start: 250, end: 80 };
-            createWallSegment(initialSegment.start, initialSegment.end, textTexture);
+            initialWalls = createWallSegment(initialSegment.start, initialSegment.end, textTexture);
 
             // Front wall (end of corridor)
             const frontWallTexture = textTexture.clone();
@@ -1105,7 +1106,12 @@
             });
             checkpoints = [];
 
-            // Reset player position to origin
+            // Clean up old initial walls
+            if (initialWalls && initialWalls.length > 0) {
+                initialWalls.forEach(wall => scene.remove(wall));
+            }
+
+            // Reset player position to origin (starting position)
             camera.position.set(0, 1.6, 0);
             camera.rotation.set(0, 0, 0);
 
@@ -1113,9 +1119,13 @@
             state.velocityY = 0;
             state.isGrounded = true;
 
-            // Reset checkpoint generation
+            // Reset checkpoint generation to initial values
             nextCheckpointZ = -100;
             lastWallEndZ = 80;
+
+            // Recreate initial wall segment from start to first checkpoint area
+            const initialSegment = { start: 250, end: 80 };
+            initialWalls = createWallSegment(initialSegment.start, initialSegment.end, sharedWallTexture);
 
             // Generate new checkpoint
             generateCheckpoint();
