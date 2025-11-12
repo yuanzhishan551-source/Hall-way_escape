@@ -744,31 +744,69 @@
             scene.add(exitPanel);
             checkpoint.exitPanel = exitPanel;
 
-            // SIMPLIFIED BRANCH CORRIDORS - Use minimal geometry
+            // SIMPLIFIED BRANCH CORRIDORS - Use minimal geometry (3 walls each)
             const branchWidth = 3;
 
-            // Create shared material for branches (reuse, don't clone)
+            // Create shared material for branches (simple color, no texture)
             const branchMaterial = new THREE.MeshStandardMaterial({
-                color: 0x222222,
-                emissive: 0x555555,
-                emissiveIntensity: 0.3
+                color: 0x1a1a1a,
+                emissive: 0x333333,
+                emissiveIntensity: 0.5
             });
 
-            // LEFT branch - single box geometry
-            const leftBranch = new THREE.Mesh(
-                new THREE.BoxGeometry(15, 10, 3),
+            // LEFT branch - 3 walls only (back, front, end)
+            const leftBranch = new THREE.Group();
+
+            // Back wall
+            leftBranch.add(new THREE.Mesh(
+                new THREE.PlaneGeometry(15, 10),
                 branchMaterial
-            );
-            leftBranch.position.set(-10.5, 0, checkpoint.z);
+            ));
+            leftBranch.children[0].position.set(-10.5, 0, checkpoint.z - 1.5);
+
+            // Front wall
+            leftBranch.add(new THREE.Mesh(
+                new THREE.PlaneGeometry(15, 10),
+                branchMaterial
+            ));
+            leftBranch.children[1].position.set(-10.5, 0, checkpoint.z + 1.5);
+
+            // End wall
+            leftBranch.add(new THREE.Mesh(
+                new THREE.PlaneGeometry(3, 10),
+                branchMaterial
+            ));
+            leftBranch.children[2].position.set(-18, 0, checkpoint.z);
+            leftBranch.children[2].rotation.y = Math.PI / 2;
+
             scene.add(leftBranch);
             checkpoint.leftDoor = leftBranch;
 
-            // RIGHT branch - single box geometry
-            const rightBranch = new THREE.Mesh(
-                new THREE.BoxGeometry(15, 10, 3),
+            // RIGHT branch - 3 walls only (back, front, end)
+            const rightBranch = new THREE.Group();
+
+            // Back wall
+            rightBranch.add(new THREE.Mesh(
+                new THREE.PlaneGeometry(15, 10),
                 branchMaterial
-            );
-            rightBranch.position.set(10.5, 0, checkpoint.z);
+            ));
+            rightBranch.children[0].position.set(10.5, 0, checkpoint.z - 1.5);
+
+            // Front wall
+            rightBranch.add(new THREE.Mesh(
+                new THREE.PlaneGeometry(15, 10),
+                branchMaterial
+            ));
+            rightBranch.children[1].position.set(10.5, 0, checkpoint.z + 1.5);
+
+            // End wall
+            rightBranch.add(new THREE.Mesh(
+                new THREE.PlaneGeometry(3, 10),
+                branchMaterial
+            ));
+            rightBranch.children[2].position.set(18, 0, checkpoint.z);
+            rightBranch.children[2].rotation.y = Math.PI / 2;
+
             scene.add(rightBranch);
             checkpoint.rightDoor = rightBranch;
 
