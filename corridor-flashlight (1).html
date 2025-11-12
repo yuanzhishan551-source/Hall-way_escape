@@ -251,7 +251,8 @@
             WASD: Move<br>
             MOUSE: Look Around<br>
             CLICK: Switch Mode<br>
-            ESC: Unlock Mouse
+            ESC: Unlock Mouse<br>
+            <span style="color: #ffaa00;">Walk to branch END to choose path</span>
         </div>
     </div>
 
@@ -666,7 +667,7 @@
 
             // Arrows indicating left/right choice
             ctx.font = 'bold 60px monospace';
-            ctx.fillText('Q←  →E', 256, 320);
+            ctx.fillText('←  →', 256, 320);
 
             const markerTexture = new THREE.CanvasTexture(markerCanvas);
             markerTexture.magFilter = THREE.NearestFilter;
@@ -1250,16 +1251,6 @@
                     case 'KeyS': state.moveBackward = true; break;
                     case 'KeyA': state.moveLeft = true; break;
                     case 'KeyD': state.moveRight = true; break;
-                    case 'KeyQ':
-                        if (atCheckpoint && currentCheckpoint) {
-                            handleCheckpointChoice('left');
-                        }
-                        break;
-                    case 'KeyE':
-                        if (atCheckpoint && currentCheckpoint) {
-                            handleCheckpointChoice('right');
-                        }
-                        break;
                 }
             });
 
@@ -1410,10 +1401,10 @@
                         // Update UI
                         document.getElementById('instructions').innerHTML = `
                             CHECKPOINT!<br>
-                            Q: Choose LEFT<br>
-                            E: Choose RIGHT<br>
+                            Walk LEFT or RIGHT to choose<br>
                             Progress: ${correctPathCount}/3<br>
-                            <span style="color: #00ff00;">Use GREEN light to reveal EXIT</span>
+                            <span style="color: #00ff00;">Use GREEN light to reveal EXIT</span><br>
+                            <span style="color: #ff0000;">Wrong path = DEATH!</span>
                         `;
                     }
                     return;
@@ -1430,7 +1421,8 @@
                     WASD: Move<br>
                     MOUSE: Look Around<br>
                     CLICK: Switch Mode<br>
-                    ESC: Unlock Mouse
+                    ESC: Unlock Mouse<br>
+                    <span style="color: #ffaa00;">Walk to branch END to choose path</span>
                 `;
             }
         }
@@ -1505,7 +1497,7 @@
         function updateMovement(delta) {
             if (!state.isLocked || state.isGameOver) return;
 
-            const speed = 5.0;
+            const speed = 15.0; // Increased to 3x speed
 
             // Store old position for collision detection
             const oldX = camera.position.x;
@@ -1600,6 +1592,83 @@
                 // Main corridor length bounds
                 // Only limit forward movement (z=245), allow infinite backward movement
                 camera.position.z = Math.min(245, camera.position.z);
+            }
+
+            // NEW BRANCH DETECTION SYSTEM - Auto-detect when player reaches branch end
+            for (let checkpoint of checkpoints) {
+                const distToCheckpoint = Math.abs(camera.position.z - checkpoint.z);
+
+                // Check if player is at this checkpoint's branch area
+                if (distToCheckpoint < 2 && !checkpoint.passed) {
+                    // Player reached LEFT branch end
+                    if (camera.position.x < -17) {
+                        checkpoint.passed = true;
+
+                        if (checkpoint.correctChoice === 'left') {
+                            // CORRECT PATH - Teleport back to origin
+                            correctPathCount++;
+                            console.log(`✅ Correct path! Progress: ${correctPathCount}/3`);
+
+                            // Teleport player back to start
+                            camera.position.set(0, 1.6, 0);
+                            camera.rotation.set(0, 0, 0);
+
+                            // Visual feedback
+                            document.getElementById('mode-indicator').textContent = `CORRECT! Teleporting... (${correctPathCount}/3)`;
+                            document.getElementById('mode-indicator').style.color = '#00ff00';
+
+                            setTimeout(() => {
+                                document.getElementById('mode-indicator').textContent = `MODE: ${modes[state.currentMode].name}`;
+                                document.getElementById('mode-indicator').style.color = modes[state.currentMode].colorHex;
+                            }, 2000);
+
+                            // Check if all 3 correct - create exit door
+                            if (correctPathCount >= 3) {
+                                createExitDoor(500, 6, 10);
+                                console.log('🚪 Exit door appeared!');
+                            }
+                        } else {
+                            // WRONG PATH - Instant death
+                            console.log('❌ Wrong path - DEATH');
+                            triggerGameOver();
+                        }
+                        break;
+                    }
+                    // Player reached RIGHT branch end
+                    else if (camera.position.x > 17) {
+                        checkpoint.passed = true;
+
+                        if (checkpoint.correctChoice === 'right') {
+                            // CORRECT PATH - Teleport back to origin
+                            correctPathCount++;
+                            console.log(`✅ Correct path! Progress: ${correctPathCount}/3`);
+
+                            // Teleport player back to start
+                            camera.position.set(0, 1.6, 0);
+                            camera.rotation.set(0, 0, 0);
+
+                            // Visual feedback
+                            document.getElementById('mode-indicator').textContent = `CORRECT! Teleporting... (${correctPathCount}/3)`;
+                            document.getElementById('mode-indicator').style.color = '#00ff00';
+
+                            setTimeout(() => {
+                                document.getElementById('mode-indicator').textContent = `MODE: ${modes[state.currentMode].name}`;
+                                document.getElementById('mode-indicator').style.color = modes[state.currentMode].colorHex;
+                            }, 2000);
+
+                            // Check if all 3 correct - create exit door
+                            if (correctPathCount >= 3) {
+                                createExitDoor(500, 6, 10);
+                                console.log('🚪 Exit door appeared!');
+                            }
+                        } else {
+                            // WRONG PATH - Instant death
+                            console.log('❌ Wrong path - DEATH');
+                            triggerGameOver();
+                        }
+                        break;
+                    }
+                }
             }
 
             // Check if player reached exit door (escaped)
