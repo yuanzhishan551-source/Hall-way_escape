@@ -629,12 +629,19 @@
             // Full Ceiling (covers entire 15m)
             group.add(createPlane(15, 3, createTexture(sharedWallTexture, 5, 1), centerX, 5, z, rotX));
 
-            // Front & Back walls (shortened to avoid overlap with connector walls)
-            // Only cover branch area: X from -18 to -3.5 (left) or 3.5 to 18 (right)
-            const wallLength = 14.5; // 15m - 0.5m gap
-            const wallCenterX = endX > 0 ? 10.75 : -10.75; // Shifted away from center
-            group.add(createPlane(wallLength, 10, createTexture(sharedWallTexture, 5, 2), wallCenterX, 0, z - 1.5));
-            group.add(createPlane(wallLength, 10, createTexture(sharedWallTexture, 5, 2), wallCenterX, 0, z + 1.5));
+            // Front & Back walls - shifted 100px (1m) away from main corridor
+            // Left branch: walls at Z offset by -1m (back) and +1m (front) from intersection
+            // Right branch: same Z offset
+            const wallLength = 15; // Full length
+            const wallCenterX = endX > 0 ? 10.5 : -10.5;
+
+            // Back wall - shifted further back (away from player's approach)
+            const backWallZ = endX > 0 ? z - 2.5 : z - 2.5; // 1m extra shift
+            group.add(createPlane(wallLength, 10, createTexture(sharedWallTexture, 5, 2), wallCenterX, 0, backWallZ));
+
+            // Front wall - shifted further forward
+            const frontWallZ = endX > 0 ? z + 2.5 : z + 2.5; // 1m extra shift
+            group.add(createPlane(wallLength, 10, createTexture(sharedWallTexture, 5, 2), wallCenterX, 0, frontWallZ));
 
             // End wall (at the dead end where the hole is)
             group.add(createPlane(3, 10, createTexture(sharedWallTexture, 1, 2), endX, 0, z, 0, rotY));
@@ -754,15 +761,27 @@
                 createWallSegment(wallStartZ, wallEndZ, sharedWallTexture);
             }
 
-            // Create connecting walls in main corridor area
-            const tex = createTexture(sharedWallTexture, 0.3, 2);
-            [checkpoint.z + 1.5, checkpoint.z - 1.5].forEach(z => {
-                scene.add(createPlane(2.5, 10, tex, -1.75, 0, z));
-                scene.add(createPlane(2.5, 10, createTexture(sharedWallTexture, 0.3, 2), 1.75, 0, z));
-            });
+            // Create back wall of main corridor at checkpoint (dead end)
+            // This closes off the main corridor - player MUST choose left or right
+            const endWallZ = checkpoint.z - 1.5; // Back wall of intersection
+            const endWallTex = createTexture(sharedWallTexture, 2, 2);
+            checkpoint.backWall = createPlane(6, 10, endWallTex, 0, 0, endWallZ);
+            scene.add(checkpoint.backWall);
 
-            // STOP here - no more corridor after checkpoint (player must choose left or right)
-            // Main corridor ends at this checkpoint
+            // Create small connector walls at front of intersection (where branches start)
+            const frontWallZ = checkpoint.z + 1.5;
+            const frontTex = createTexture(sharedWallTexture, 0.3, 2);
+            checkpoint.connectorWalls = [];
+            // Left side connector (x=-3 to x=-0.5)
+            const leftConnector = createPlane(2.5, 10, frontTex, -1.75, 0, frontWallZ);
+            scene.add(leftConnector);
+            checkpoint.connectorWalls.push(leftConnector);
+            // Right side connector (x=0.5 to x=3)
+            const rightConnector = createPlane(2.5, 10, createTexture(sharedWallTexture, 0.3, 2), 1.75, 0, frontWallZ);
+            scene.add(rightConnector);
+            checkpoint.connectorWalls.push(rightConnector);
+
+            // Main corridor ends here - player must choose left or right branch
 
             // Add checkpoint to array and update next position
             checkpoints.push(checkpoint);
@@ -1365,6 +1384,10 @@
                 if (checkpoint.rightDoor) scene.remove(checkpoint.rightDoor);
                 if (checkpoint.leftBlock) scene.remove(checkpoint.leftBlock);
                 if (checkpoint.rightBlock) scene.remove(checkpoint.rightBlock);
+                if (checkpoint.backWall) scene.remove(checkpoint.backWall);
+                if (checkpoint.connectorWalls) {
+                    checkpoint.connectorWalls.forEach(wall => scene.remove(wall));
+                }
             });
             checkpoints = [];
 
